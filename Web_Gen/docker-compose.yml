@@ -1,4 +1,4 @@
-version: '0.1'
+version: '0.2'
 
 services:
   postgres:
@@ -8,7 +8,7 @@ services:
     volumes:
       - ~/apps/postgres:/var/lib/postgresql/data
     environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=postgres
+      - POSTGRES_PASSWORD=web_gen
+      - POSTGRES_USER=web_gen
+      - POSTGRES_DB=web_gen
 
