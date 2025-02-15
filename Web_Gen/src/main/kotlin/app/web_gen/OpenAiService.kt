@@ -1,20 +1,63 @@
 package app.web_gen
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import org.springframework.http.HttpEntity
+import org.springframework.ai.chat.messages.SystemMessage
+import org.springframework.ai.chat.messages.UserMessage
+import org.springframework.ai.chat.model.ChatResponse
+import org.springframework.ai.chat.prompt.Prompt
+import org.springframework.ai.embedding.EmbeddingResponse
+import org.springframework.ai.embedding.EmbeddingRequest
+import org.springframework.ai.openai.OpenAiChatModel
+import org.springframework.ai.openai.OpenAiChatOptions
+import org.springframework.ai.openai.OpenAiEmbeddingModel
+import org.springframework.ai.openai.OpenAiEmbeddingOptions
+import org.springframework.ai.openai.api.OpenAiApi
+import org.springframework.ai.openai.api.ResponseFormat
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
-import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
-import org.springframework.web.client.RestTemplate
+
 
 @Service
-class OpenAiService {
+class OpenAiService(@Value("\${spring.ai.openai.api-key}") val apiKey: String) {
 
-    private val apiKey = "your-openai-api-key"
-    private val endpoint = "https://api.openai.com/v1/embeddings"
-    private val restTemplate = RestTemplate()
+    val chatModel = OpenAiChatModel(OpenAiApi(apiKey), OpenAiChatOptions().apply {
+        this.model = "gpt-4-o"
+        this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this@OpenAiService.responseFormat)
+    })
+
+    val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
+
+    private val responseFormat =
+        """
+           {
+           "type":"object",
+           "properties":{
+                   "text_response":{"type":"string"},
+                   "new_files":{
+                        "type":"array",
+                        "items":{
+                            "type":"object",
+                             "properties":{ 
+                              "path":{"type":"string"},
+                              "content":{"type":"string"} 
+                             }
+                        },
+                   "modified_files":{                         
+                        "type":"array",                       
+                        "items":{                             
+                            "type":"object",                  
+                             "properties":{                   
+                              "path":{"type":"string"},       
+                              "old_content":{"type":"string"},
+                              "new_content":{"type":"string"}      
+                             }                                
+                        }                                     
+           },
+           "required":["text_response"],
+           "additionalProperties": false
+           } 
+        """.trimIndent()
 
     fun modifyCode(query: String, relevantCode: List<CodeSnippet>): String {
         val prompt = """
@@ -30,44 +73,26 @@ class OpenAiService {
     }
 
     fun generateCompletion(prompt: String): String {
-
-
-        val requestBody = mapOf(
-            "model" to "gpt-4",
-            "messages" to listOf(
-                mapOf("role" to "system", "content" to "You are an expert Kotlin developer."),
-                mapOf("role" to "user", "content" to prompt)
-            ),
-            "temperature" to 0.7
+        val response: ChatResponse = chatModel.call(
+            Prompt(
+                listOf(
+                    SystemMessage("You are an expert web app developer."),
+                    UserMessage(prompt)
+                ),
+            )
         )
 
-        val request = HttpEntity(requestBody, getHeaders())
-        val response = restTemplate.exchange(endpoint, HttpMethod.POST, request, String::class.java)
-
-        val jsonNode: JsonNode = jacksonObjectMapper().readTree(response.body)
-        return jsonNode["choices"][0]["message"]["content"].asText()
+        return response.result.output.text
     }
 
-    fun generateEmbedding(content: String): String {
+    fun generateEmbedding(filaName: String, content: String): FloatArray {
 
-        val requestBody = mapOf(
-            "input" to content,
-            "model" to "text-embedding-ada-002"
+        val embeddingResponse: EmbeddingResponse = embeddingModel.call(
+            EmbeddingRequest(
+                listOf(filaName, content),
+                OpenAiEmbeddingOptions.builder().build()
+            )
         )
-
-        val request = HttpEntity(requestBody, getHeaders())
-        val response = restTemplate.exchange(endpoint, HttpMethod.POST, request, String::class.java)
-
-        val jsonNode: JsonNode = jacksonObjectMapper().readTree(response.body)
-        val embeddingArray = jsonNode["data"][0]["embedding"]
-
-        return embeddingArray.toString() // Convert to string for database storage
-    }
-
-    fun getHeaders(): HttpHeaders {
-        return HttpHeaders().apply {
-            contentType = MediaType.APPLICATION_JSON
-            set("Authorization", "Bearer $apiKey")
-        }
+        return embeddingResponse.result.output
     }
 }
