@@ -1,5 +1,9 @@
 package app.web_gen
 
+import app.web_gen.response.ModelResponse
+import com.google.gson.Gson
+import org.springframework.http.HttpEntity
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -9,10 +13,12 @@ class CodeModificationController(
     private val openAiService: OpenAiService,
     private val modificationService: CodeModificationService
 ) {
+    val gson = Gson().newBuilder().create()
+
     @PostMapping("/modify")
-    fun modifyCode(@RequestParam query: String): String {
+    fun modifyCode(@RequestParam query: String): ResponseEntity<String> {
         val queryVector = openAiService.generateEmbedding(query)
-        val relevantSnippets = codeRepository.findRelevantSnippets(queryVector, 3)
+        val relevantSnippets = codeRepository.findRelevantSnippets(queryVector.toString(), 3)
 
         val modifiedCode = openAiService.modifyCode(query, relevantSnippets)
 
@@ -20,6 +26,17 @@ class CodeModificationController(
             modificationService.applyChanges("path/to/codebase/${snippet.filename}", snippet.content, modifiedCode)
         }
 
-        return "Code modified successfully!"
+        return ResponseEntity.ok("Code modified successfully!")
+    }
+
+    @PostMapping("/generate")
+    fun generateCode(@RequestParam prompt: String): ResponseEntity<String> {
+
+        val response = openAiService.generateCompletion(prompt)
+        val modelResponse = gson.fromJson(response, ModelResponse::class.java)
+
+
+        return ResponseEntity.ok(response)
+
     }
 }

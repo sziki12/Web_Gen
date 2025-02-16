@@ -19,13 +19,14 @@ import org.springframework.stereotype.Service
 
 
 @Service
-class OpenAiService(@Value("\${spring.ai.openai.api-key}") val apiKey: String) {
-
+class OpenAiService(
+    @Value("\${spring.ai.openai.api-key}")
+    val apiKey: String
+) {
     val chatModel = OpenAiChatModel(OpenAiApi(apiKey), OpenAiChatOptions().apply {
-        this.model = "gpt-4-o"
+        this.model = "gpt-4o"
         this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this@OpenAiService.responseFormat)
     })
-
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
 
     private val responseFormat =
@@ -33,8 +34,8 @@ class OpenAiService(@Value("\${spring.ai.openai.api-key}") val apiKey: String) {
            {
            "type":"object",
            "properties":{
-                   "text_response":{"type":"string"},
-                   "new_files":{
+                   "textResponse":{"type":"string"},
+                   "newFiles":{
                         "type":"array",
                         "items":{
                             "type":"object",
@@ -43,14 +44,14 @@ class OpenAiService(@Value("\${spring.ai.openai.api-key}") val apiKey: String) {
                               "content":{"type":"string"} 
                              }
                         },
-                   "modified_files":{                         
+                   "modifiedFiles":{                         
                         "type":"array",                       
                         "items":{                             
                             "type":"object",                  
                              "properties":{                   
                               "path":{"type":"string"},       
-                              "old_content":{"type":"string"},
-                              "new_content":{"type":"string"}      
+                              "oldContent":{"type":"string"},
+                              "newContent":{"type":"string"}      
                              }                                
                         }                                     
            },
@@ -73,23 +74,23 @@ class OpenAiService(@Value("\${spring.ai.openai.api-key}") val apiKey: String) {
     }
 
     fun generateCompletion(prompt: String): String {
+        println("Call")
         val response: ChatResponse = chatModel.call(
             Prompt(
                 listOf(
-                    SystemMessage("You are an expert web app developer."),
+                    SystemMessage("You are an expert web app developer. Create or modify an application based on given input."),
                     UserMessage(prompt)
                 ),
             )
         )
-
+        println("Response")
         return response.result.output.text
     }
 
-    fun generateEmbedding(filaName: String, content: String): FloatArray {
-
+    fun generateEmbedding(vararg query: String): FloatArray {
         val embeddingResponse: EmbeddingResponse = embeddingModel.call(
             EmbeddingRequest(
-                listOf(filaName, content),
+                listOf(*query),
                 OpenAiEmbeddingOptions.builder().build()
             )
         )
