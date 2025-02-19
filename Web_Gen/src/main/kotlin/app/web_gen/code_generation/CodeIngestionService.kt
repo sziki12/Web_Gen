@@ -33,7 +33,7 @@ class CodeIngestionService(
                 val snippet = CodeSnippet(
                     filename = file.fileName.toString(),
                     content = content,
-                    embedding = embedding.toString()
+                    embedding = embedding
                 )
                 codeRepository.save(snippet)
             }

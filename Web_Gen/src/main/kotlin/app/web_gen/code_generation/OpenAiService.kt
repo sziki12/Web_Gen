@@ -51,6 +51,7 @@ class OpenAiService(
                 ),
             )
         )
+        //TODO Generate cmd commands to create missing files, and run the application.
         println("Response")
         return response.result.output.text
     }

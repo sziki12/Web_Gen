@@ -67,6 +67,13 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/io.hypersistence/hypersistence-utils-hibernate-62 -->
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-62</artifactId>
+            <version>3.5.3</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

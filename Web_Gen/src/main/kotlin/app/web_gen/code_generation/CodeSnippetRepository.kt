@@ -5,6 +5,6 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
 interface CodeSnippetRepository : JpaRepository<CodeSnippet, Long> {
-    @Query("SELECT * FROM code_snippets ORDER BY embedding <-> :queryVector LIMIT :limit", nativeQuery = true)
-    fun findRelevantSnippets(@Param("queryVector") queryVector: String, @Param("limit") limit: Int): List<CodeSnippet>
+    @Query("SELECT * FROM code_snippets ORDER BY embedding <-> cast(:queryVector as vector)  LIMIT :limit", nativeQuery = true)
+    fun findRelevantSnippets(@Param("queryVector") queryVector: FloatArray, @Param("limit") limit: Int): List<CodeSnippet>
 }
