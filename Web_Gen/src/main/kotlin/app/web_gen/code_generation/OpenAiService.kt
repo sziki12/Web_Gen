@@ -1,5 +1,6 @@
-package app.web_gen
+package app.web_gen.code_generation
 
+import app.web_gen.code_generation.response.ModelResponse
 import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.model.ChatResponse
@@ -13,8 +14,6 @@ import org.springframework.ai.openai.OpenAiEmbeddingOptions
 import org.springframework.ai.openai.api.OpenAiApi
 import org.springframework.ai.openai.api.ResponseFormat
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 
 
@@ -24,48 +23,9 @@ class OpenAiService(
     val apiKey: String
 ) {
 
-    private val responseFormat =
-        """
-{
-  "type": "object",
-  "properties": {
-    "textResponse": {
-      "type": "string"
-    },
-    "newFiles": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "path": { "type": "string" },
-          "content": { "type": "string" }
-        },
-        "required": ["path", "content"],
-        "additionalProperties": false
-      }
-    },
-    "modifiedFiles": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "path": { "type": "string" },
-          "oldContent": { "type": "string" },
-          "newContent": { "type": "string" }
-        },
-        "required": ["path", "oldContent", "newContent"],
-        "additionalProperties": false
-      }
-    }
-  },
-  "required": ["textResponse", "newFiles", "modifiedFiles"],
-  "additionalProperties": false
-}
-        """
-
     val chatModel = OpenAiChatModel(OpenAiApi(apiKey), OpenAiChatOptions().apply {
         this.model = "gpt-4o"
-        this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this@OpenAiService.responseFormat)
+        this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, ModelResponse.responseFormat)
     })
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
     fun modifyCode(query: String, relevantCode: List<CodeSnippet>): String {

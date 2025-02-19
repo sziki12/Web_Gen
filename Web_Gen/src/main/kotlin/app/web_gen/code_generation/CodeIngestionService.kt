@@ -1,4 +1,4 @@
-package app.web_gen
+package app.web_gen.code_generation
 
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

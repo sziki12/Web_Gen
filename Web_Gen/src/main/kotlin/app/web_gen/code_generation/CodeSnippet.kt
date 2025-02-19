@@ -1,4 +1,4 @@
-package app.web_gen
+package app.web_gen.code_generation
 
 import jakarta.persistence.*
 import org.hibernate.annotations.Type
