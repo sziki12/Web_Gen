@@ -23,46 +23,54 @@ class OpenAiService(
     @Value("\${spring.ai.openai.api-key}")
     val apiKey: String
 ) {
+
+    private val responseFormat =
+        """
+{
+  "type": "object",
+  "properties": {
+    "textResponse": {
+      "type": "string"
+    },
+    "newFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "content": { "type": "string" }
+        },
+        "required": ["path", "content"],
+        "additionalProperties": false
+      }
+    },
+    "modifiedFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { "type": "string" },
+          "oldContent": { "type": "string" },
+          "newContent": { "type": "string" }
+        },
+        "required": ["path", "oldContent", "newContent"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["textResponse", "newFiles", "modifiedFiles"],
+  "additionalProperties": false
+}
+        """
+
     val chatModel = OpenAiChatModel(OpenAiApi(apiKey), OpenAiChatOptions().apply {
         this.model = "gpt-4o"
         this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, this@OpenAiService.responseFormat)
     })
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
-
-    private val responseFormat =
-        """
-           {
-           "type":"object",
-           "properties":{
-                   "textResponse":{"type":"string"},
-                   "newFiles":{
-                        "type":"array",
-                        "items":{
-                            "type":"object",
-                             "properties":{ 
-                              "path":{"type":"string"},
-                              "content":{"type":"string"} 
-                             }
-                        },
-                   "modifiedFiles":{                         
-                        "type":"array",                       
-                        "items":{                             
-                            "type":"object",                  
-                             "properties":{                   
-                              "path":{"type":"string"},       
-                              "oldContent":{"type":"string"},
-                              "newContent":{"type":"string"}      
-                             }                                
-                        }                                     
-           },
-           "required":["text_response"],
-           "additionalProperties": false
-           } 
-        """.trimIndent()
-
     fun modifyCode(query: String, relevantCode: List<CodeSnippet>): String {
         val prompt = """
-            You are an expert Kotlin developer. Modify the following code based on this request: $query.
+            You are an expert developer. Modify the following code based on this request: $query.
             Make only necessary changes and return the updated code.
 
             Relevant code:
