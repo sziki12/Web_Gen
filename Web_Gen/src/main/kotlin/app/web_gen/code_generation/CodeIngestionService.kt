@@ -1,5 +1,7 @@
 package app.web_gen.code_generation
 
+import app.web_gen.code_snippet.CodeSnippet
+import app.web_gen.code_snippet.CodeSnippetRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.nio.file.Files

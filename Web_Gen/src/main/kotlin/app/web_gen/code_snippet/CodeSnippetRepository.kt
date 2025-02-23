@@ -1,4 +1,4 @@
-package app.web_gen.code_generation
+package app.web_gen.code_snippet
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query

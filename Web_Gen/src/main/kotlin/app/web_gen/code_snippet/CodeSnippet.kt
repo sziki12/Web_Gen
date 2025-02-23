@@ -1,7 +1,6 @@
-package app.web_gen.code_generation
+package app.web_gen.code_snippet
 
-import com.fasterxml.jackson.annotation.JsonInclude
-import dev.ai4j.openai4j.Json
+import app.web_gen.project.GeneratedProject
 import jakarta.persistence.*
 import org.hibernate.annotations.Type
 import io.hypersistence.utils.hibernate.type.json.JsonType;
@@ -19,10 +18,15 @@ data class CodeSnippet(
     @Type(JsonType::class)
     @Column(columnDefinition = "vector(1536)") // Assuming 1536-dimensional OpenAI embeddings
     val embedding: FloatArray,
+) {
+
+    @ManyToOne
+    @JoinColumn(name="project_id")
+    lateinit var project:GeneratedProject
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long? = null,
-) {
+    @Column(name = "code_snippet_id")
+    val id: Long? = null
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is CodeSnippet) return false

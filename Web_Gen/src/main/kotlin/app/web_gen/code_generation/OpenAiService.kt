@@ -1,6 +1,7 @@
 package app.web_gen.code_generation
 
 import app.web_gen.code_generation.response.ModelResponse
+import app.web_gen.code_snippet.CodeSnippet
 import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.model.ChatResponse
