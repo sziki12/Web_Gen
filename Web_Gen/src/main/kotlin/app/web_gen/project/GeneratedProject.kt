@@ -8,7 +8,7 @@ import jakarta.persistence.*
 class GeneratedProject(
     var name: String,
     var codeToGenerate:String,
-    var codeToStart:String,
+    var codeToRun:String,
     ) {
 
     @Id

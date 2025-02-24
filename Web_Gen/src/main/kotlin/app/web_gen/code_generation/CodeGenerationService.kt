@@ -19,9 +19,11 @@ class CodeGenerationService(
     private val generatedProjectRepository: GeneratedProjectRepository,
     private val openAiService: OpenAiService,
 ) {
-    private val baseFilePath: String =  //Path(System.getProperty("user.dir"), "src/main/resources/generated").toString()
+    private val baseFilePath: String =
+        //Path(System.getProperty("user.dir"), "src/main/resources/generated").toString()
         Path("D:\\Web_Gen_Projects").toString()
 
+    private val runningProcesses = mutableMapOf<String,Process>()
     fun applyChanges(filePath: String, oldCode: String, newCode: String) {
         val path = Paths.get(filePath)
         val content = Files.readString(path)
@@ -29,17 +31,12 @@ class CodeGenerationService(
         Files.writeString(path, updatedContent)
     }
 
-    fun generateAllFiles(modelResponse: ModelResponse) {
-        this.generateFiles(modelResponse)
-        //TODO modified  files
-        //this.runApplication(modelResponse)
-    }
-
-
-    private fun generateFiles(modelResponse: ModelResponse) {
+    fun generateFiles(modelResponse: ModelResponse) {
 
         var project = GeneratedProject(
-            name = modelResponse.projectName
+            name = modelResponse.projectName,
+            codeToGenerate = modelResponse.codeToGenerate,
+            codeToRun = modelResponse.codeToRun
         )
         project = generatedProjectRepository.save(project)
 
@@ -64,10 +61,10 @@ class CodeGenerationService(
         codeGeneration.start().waitFor()
     }
 
-    private fun createGeneratedFiles(modelResponse: ModelResponse):List<CodeSnippet> {
-        val projectPath = Path(this.baseFilePath,modelResponse.projectName).pathString
+    private fun createGeneratedFiles(modelResponse: ModelResponse): List<CodeSnippet> {
+        val projectPath = Path(this.baseFilePath, modelResponse.projectName).pathString
         var writer: PrintWriter
-        val createdSnippets =  mutableListOf<CodeSnippet>()
+        val createdSnippets = mutableListOf<CodeSnippet>()
         for (newFile in modelResponse.newFiles) {
 
             val file = File(Path(projectPath, newFile.path).toString())
@@ -80,27 +77,42 @@ class CodeGenerationService(
 
             if (!file.exists()) {
                 parent.mkdirs()
-                file.createNewFile()
-                writer = PrintWriter(file)
-                writer.println(newFile.content)
-                writer.close()
+            } else {
+                file.delete()
             }
+            file.createNewFile()
+            writer = PrintWriter(file)
+            writer.println(newFile.content)
+            writer.close()
         }
         return createdSnippets
     }
 
-    private fun runApplication(modelResponse: ModelResponse) {
-        val projectPath = Path(this.baseFilePath,modelResponse.projectName).pathString
-        //Run App
-        println("Starting")
+    fun runApplication(projectName: String) {
+        val project = generatedProjectRepository.findAllByName(projectName)
+        project?.let {
+            val projectPath = Path(this.baseFilePath, project.name).pathString
+            //Run App
+            println("Starting")
 
-        var runCommands = modelResponse.codeToRun.split(" ")
-        runCommands = runCommands.map { it.replace("npm", "C:\\Program Files\\nodejs\\npm.cmd") }
-        println(runCommands)
-        val runnable = ProcessBuilder()
-            .command(runCommands)
-            .directory(File(projectPath)).inheritIO()
-        runnable.start().waitFor()
-        println("Finished")
+            var runCommands = project.codeToRun.split(" ")
+            runCommands = runCommands.map { it.replace("npm", "C:\\Program Files\\nodejs\\npm.cmd") }
+            println(runCommands)
+            val runnable = ProcessBuilder()
+                .command(runCommands)
+                .directory(File(projectPath)).inheritIO()
+            val process = runnable.start()
+            runningProcesses[projectName] = process
+            println("Started")
+        }
+    }
+
+    fun terminateApplication(projectName: String){
+        val process = runningProcesses[projectName]
+        process?.let { parent ->
+            parent.descendants().forEach{descendant->descendant.destroy()}
+            parent.destroy()
+            println("Destroyed")
+        }
     }
 }
