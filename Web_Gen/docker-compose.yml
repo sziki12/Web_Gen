@@ -1,0 +1,18 @@
+version: '0.2'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg17 # PostgreSQL with pgvector support
+    container_name: pgvector-db
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./src/main/resources/posgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    environment:
+      - POSTGRES_PASSWORD=web_gen
+      - POSTGRES_USER=web_gen
+      - POSTGRES_DB=web_gen
+volumes:
+  pgdata: # Stores data outside the container to ensure persistence
+
