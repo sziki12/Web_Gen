@@ -5,6 +5,7 @@ import app.web_gen.code_snippet.CodeSnippet
 import app.web_gen.code_snippet.CodeSnippetRepository
 import app.web_gen.project.GeneratedProject
 import app.web_gen.project.GeneratedProjectRepository
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.File
 import java.io.PrintWriter
@@ -18,10 +19,10 @@ class CodeGenerationService(
     private val codeSnippetRepository: CodeSnippetRepository,
     private val generatedProjectRepository: GeneratedProjectRepository,
     private val openAiService: OpenAiService,
+    private val commandSubstitutionService: CommandSubstitutionService
 ) {
-    private val baseFilePath: String =
-        //Path(System.getProperty("user.dir"), "src/main/resources/generated").toString()
-        Path("D:\\Web_Gen_Projects").toString()
+    @Value(value = "\${generated.project.path}")
+    private lateinit var baseFilePath: String
 
     private val runningProcesses = mutableMapOf<String,Process>()
     fun applyChanges(filePath: String, oldCode: String, newCode: String) {
@@ -53,8 +54,7 @@ class CodeGenerationService(
 
     private fun runGenerationCommand(modelResponse: ModelResponse) {
         var commands = modelResponse.codeToGenerate.split(" ")
-        commands = commands.map { it.replace("npx", "C:\\Program Files\\nodejs\\npx.cmd") }
-        commands = commands.map { it.replace("npm", "C:\\Program Files\\nodejs\\npm.cmd") }
+        commands = commandSubstitutionService.substituteCommands(commands)
         val codeGeneration = ProcessBuilder()
             .command(commands)
             .directory(File(this.baseFilePath)).inheritIO()
@@ -96,8 +96,10 @@ class CodeGenerationService(
             println("Starting")
 
             var runCommands = project.codeToRun.split(" ")
-            runCommands = runCommands.map { it.replace("npm", "C:\\Program Files\\nodejs\\npm.cmd") }
+            runCommands = commandSubstitutionService.substituteCommands(runCommands)
+
             println(runCommands)
+
             val runnable = ProcessBuilder()
                 .command(runCommands)
                 .directory(File(projectPath)).inheritIO()

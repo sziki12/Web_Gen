@@ -16,7 +16,7 @@ class CodeGenerationController(
     private val openAiService: OpenAiService,
     private val modificationService: CodeGenerationService
 ) {
-    val gson = Gson().newBuilder().create()
+    private val gson: Gson = Gson().newBuilder().create()
 
     @PostMapping("/modify")
     fun modifyCode(@RequestParam query: String): ResponseEntity<String> {
