@@ -30,14 +30,15 @@ class OpenAiService(
     })
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
     fun modifyCode(query: String, relevantCode: List<CodeSnippet>): String {
+        val content = relevantCode.joinToString("\n\n") { "File: ${it.relativePath}\n${it.content}" }
         val prompt = """
             You are an expert developer. Modify the following code based on this request: $query.
             Make only necessary changes and return the updated code.
 
             Relevant code:
-            ${relevantCode.joinToString("\n\n") { "File: ${it.filename}\n${it.content}" }}
+            $content
         """.trimIndent()
-
+        println("\n$content\n")
         val response = generateCompletion(prompt)
         return response
     }

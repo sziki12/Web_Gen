@@ -25,10 +25,11 @@ class CodeGenerationService(
     private lateinit var baseFilePath: String
 
     private val runningProcesses = mutableMapOf<String,Process>()
-    fun applyChanges(filePath: String, oldCode: String, newCode: String) {
-        val path = Paths.get(filePath)
-        val content = Files.readString(path)
-        val updatedContent = content.replace(oldCode, newCode)
+    fun applyChanges(project:GeneratedProject, oldSnippet:CodeSnippet,replacedCode:String, newCode: String) {
+        val path = Path(baseFilePath,project.name,oldSnippet.relativePath)
+        val updatedContent = oldSnippet.content.replace(replacedCode, newCode)
+        //TODO Update Snippet in DB
+        codeSnippetRepository.save(oldSnippet)
         Files.writeString(path, updatedContent)
     }
 
@@ -70,7 +71,9 @@ class CodeGenerationService(
             val file = File(Path(projectPath, newFile.path).toString())
             val parent = File(file.parent)
             val codeSnippet = CodeSnippet(
-                file.name, newFile.content,
+                file.name,
+                newFile.path,
+                newFile.content,
                 openAiService.generateEmbedding(file.name, newFile.content),
             )
             createdSnippets.add(codeSnippetRepository.save(codeSnippet))
@@ -89,7 +92,7 @@ class CodeGenerationService(
     }
 
     fun runApplication(projectName: String) {
-        val project = generatedProjectRepository.findAllByName(projectName)
+        val project = generatedProjectRepository.findByName(projectName)
         project?.let {
             val projectPath = Path(this.baseFilePath, project.name).pathString
             //Run App

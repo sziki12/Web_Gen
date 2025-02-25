@@ -10,6 +10,7 @@ import io.hypersistence.utils.hibernate.type.json.JsonType;
 data class CodeSnippet(
 
     val filename: String,
+    val relativePath: String,
 
     @Column(columnDefinition = "TEXT")
     val content: String,

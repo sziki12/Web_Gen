@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import kotlin.io.path.pathString
 
 @Service
 class CodeIngestionService(
@@ -35,7 +36,8 @@ class CodeIngestionService(
                 val snippet = CodeSnippet(
                     filename = file.fileName.toString(),
                     content = content,
-                    embedding = embedding
+                    embedding = embedding,
+                    relativePath = file.pathString //TODO Make it relative path
                 )
                 codeRepository.save(snippet)
             }

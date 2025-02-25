@@ -18,18 +18,22 @@ class CodeGenerationController(
 ) {
     private val gson: Gson = Gson().newBuilder().create()
 
-    @PostMapping("/modify")
-    fun modifyCode(@RequestParam query: String): ResponseEntity<String> {
+    @PostMapping("/{projectName}/modify")
+    fun modifyCode(@RequestParam query: String, @PathVariable projectName: String): ResponseEntity<ModelResponse> {
         val queryVector = openAiService.generateEmbedding(query)
-        val relevantSnippets = codeRepository.findRelevantSnippets(queryVector, 3)
-
-        val modifiedCode = openAiService.modifyCode(query, relevantSnippets)
-
-        relevantSnippets.forEach { snippet ->
-            modificationService.applyChanges("path/to/codebase/${snippet.filename}", snippet.content, modifiedCode)
+        val relevantSnippets = codeRepository.findRelevantSnippets(projectName, queryVector, 3)
+        val project = projectRepository.findByName(projectName) ?: return ResponseEntity.notFound().build()
+        val response = openAiService.modifyCode(query, relevantSnippets)
+        val modifiedCode = gson.fromJson(response, ModelResponse::class.java)
+        modifiedCode.modifiedFiles.forEach { modifiedFile ->
+            val snippet = relevantSnippets.find { it.relativePath == modifiedFile.path }
+            snippet?.let {
+                println("Modified: ${it.relativePath}")
+                modificationService.applyChanges(project, snippet, modifiedFile.oldContent, modifiedFile.newContent)
+            }
         }
 
-        return ResponseEntity.ok("Code modified successfully!")
+        return ResponseEntity.ok(modifiedCode)
     }
 
     @PostMapping("/generate")
@@ -45,16 +49,16 @@ class CodeGenerationController(
 
     }
 
-    @GetMapping("/query")
-    fun findRelevantSnippets(@RequestParam query: String): ResponseEntity<List<String>> {
+    @GetMapping("/{projectName}/query")
+    fun findRelevantSnippets(@RequestParam query: String, @PathVariable projectName: String): ResponseEntity<List<String>> {
         val transformedQuery = openAiService.generateEmbedding(query)
-        val relevantSnippets = codeRepository.findRelevantSnippets(transformedQuery, limit = 2)
+        val relevantSnippets = codeRepository.findRelevantSnippets(projectName,transformedQuery, limit = 2)
         return ResponseEntity.ok(relevantSnippets.map { it.filename })
     }
 
     @PostMapping("/{projectName}/start")
     fun startProject(@PathVariable projectName: String): ResponseEntity<String> {
-        projectRepository.findAllByName(projectName)?.let {
+        projectRepository.findByName(projectName)?.let {
             codeGenerationService.runApplication(projectName)
             return ResponseEntity.ok(projectName)
         }
@@ -63,7 +67,7 @@ class CodeGenerationController(
 
     @PostMapping("/{projectName}/terminate")
     fun terminateProject(@PathVariable projectName: String): ResponseEntity<String> {
-        projectRepository.findAllByName(projectName)?.let {
+        projectRepository.findByName(projectName)?.let {
             codeGenerationService.terminateApplication(projectName)
             return ResponseEntity.ok(projectName)
         }
