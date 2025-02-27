@@ -7,5 +7,5 @@ import java.util.Optional
 @Repository
 interface GeneratedProjectRepository: JpaRepository<GeneratedProject, Long> {
 
-    fun findByName(name: String):GeneratedProject?
+    fun findByName(name: String):Optional<GeneratedProject>
 }

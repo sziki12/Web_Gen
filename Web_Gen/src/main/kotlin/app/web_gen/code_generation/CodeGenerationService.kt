@@ -5,6 +5,7 @@ import app.web_gen.code_snippet.CodeSnippet
 import app.web_gen.code_snippet.CodeSnippetRepository
 import app.web_gen.project.GeneratedProject
 import app.web_gen.project.GeneratedProjectRepository
+import okhttp3.internal.notifyAll
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.File
@@ -33,7 +34,7 @@ class CodeGenerationService(
         Files.writeString(path, updatedContent)
     }
 
-    fun generateFiles(modelResponse: ModelResponse) {
+    fun generateProjectFiles(modelResponse: ModelResponse) {
 
         var project = GeneratedProject(
             name = modelResponse.projectName,
@@ -49,8 +50,25 @@ class CodeGenerationService(
 
         println("Completed")
 
-        project.snippets.addAll(createGeneratedFiles(modelResponse))
+        project.snippets.addAll(generateFiles(modelResponse))
         generatedProjectRepository.save(project)
+    }
+
+    fun updateProjectFiles(modifiedCode: ModelResponse, relevantSnippets:List<CodeSnippet>){
+        //Find project
+        val project = generatedProjectRepository.findByName(modifiedCode.projectName).get()
+        //Modify existing files
+        modifiedCode.modifiedFiles.forEach { modifiedFile ->
+            val snippet = relevantSnippets.find { it.relativePath == modifiedFile.path }
+            snippet?.let {
+                println("Modified: ${it.relativePath}")
+                this.applyChanges(project, snippet, modifiedFile.oldContent, modifiedFile.newContent)
+            }
+        }
+        //Create new files if they to not exist
+
+        //Return or request solution for conflicting files
+
     }
 
     private fun runGenerationCommand(modelResponse: ModelResponse) {
@@ -62,7 +80,7 @@ class CodeGenerationService(
         codeGeneration.start().waitFor()
     }
 
-    private fun createGeneratedFiles(modelResponse: ModelResponse): List<CodeSnippet> {
+    private fun generateFiles(modelResponse: ModelResponse,): List<CodeSnippet> {
         val projectPath = Path(this.baseFilePath, modelResponse.projectName).pathString
         var writer: PrintWriter
         val createdSnippets = mutableListOf<CodeSnippet>()
