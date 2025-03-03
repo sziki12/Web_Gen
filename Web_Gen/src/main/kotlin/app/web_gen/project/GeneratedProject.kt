@@ -7,7 +7,9 @@ import jakarta.persistence.*
 @Table(name="projects")
 class GeneratedProject(
     var name: String,
+    @Column(columnDefinition = "TEXT")
     var codeToGenerate:String,
+    @Column(columnDefinition = "TEXT")
     var codeToRun:String,
     ) {
 

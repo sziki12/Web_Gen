@@ -1,6 +1,6 @@
 package app.web_gen.code_generation
 
-import app.web_gen.code_generation.response.ModelResponse
+import app.web_gen.code_generation.response.ProjectModificationResponse
 import app.web_gen.code_snippet.CodeSnippet
 import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.messages.UserMessage
@@ -21,13 +21,10 @@ import org.springframework.stereotype.Service
 @Service
 class OpenAiService(
     @Value("\${spring.ai.openai.api-key}")
-    val apiKey: String
+    val apiKey: String,
+    @Value("\${spring.ai.openai.model}")
+    val model: String
 ) {
-
-    val chatModel = OpenAiChatModel(OpenAiApi(apiKey), OpenAiChatOptions().apply {
-        this.model = "gpt-4o"
-        this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, ModelResponse.responseFormat)
-    })
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
     fun modifyCode(query: String, relevantCode: List<CodeSnippet>): String {
         val content = relevantCode.joinToString("\n\n") { "File: ${it.relativePath}\n${it.content}" }
@@ -39,12 +36,23 @@ class OpenAiService(
             $content
         """.trimIndent()
         println("\n$content\n")
-        val response = generateCompletion(prompt)
+        val response = structuredResponse(prompt, ProjectModificationResponse.responseFormat)
         return response
     }
 
-    fun generateCompletion(prompt: String): String {
+    fun structuredResponse(prompt: String, responseFormat: String? = null): String {
         println("Call")
+        val chatModel = OpenAiChatModel(OpenAiApi(apiKey), OpenAiChatOptions().apply {
+            this.model = this@OpenAiService.model
+            responseFormat?.let {
+                try {
+                    this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, responseFormat)
+                } catch (e: Exception) {
+                    System.err.println("Parsing response format FAILED:\n$responseFormat")
+                }
+            }
+        })
+
         val response: ChatResponse = chatModel.call(
             Prompt(
                 listOf(

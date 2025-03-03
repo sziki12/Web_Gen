@@ -1,13 +1,14 @@
 package app.web_gen.code_generation.response
 
+import app.web_gen.code_snippet.CodeSnippet
+
 data class ProjectModificationResponse(
     val textResponse: String,
     val codeToGenerate: String,
     var newFiles: MutableList<FileContent>,
     var modifiedFiles: MutableList<ModifiedFileContent>,
-    )
-{
-    companion object{
+) {
+    companion object {
         val responseFormat =
             """
 {
@@ -59,16 +60,16 @@ data class ProjectCreationResponse(
     val codeToRun: String,
     var newFiles: MutableList<FileContent>
 
-)
-{
-    companion object{
+) {
+    companion object {
         val responseFormat =
             """
 {
   "type": "object",
   "properties": {
     "textResponse": {
-      "type": "string"
+      "type": "string",
+      "description":"Brief response to the users request"
     },
     "codeToGenerate": {
       "type": "string",
@@ -102,9 +103,8 @@ data class FileConflictResolverResponse(
     val textResponse: String,
     val codeToGenerate: String,
     var modifiedFiles: MutableList<ModifiedFileContent>,
-)
-{
-    companion object{
+) {
+    companion object {
         val responseFormat =
             """
 {
@@ -147,5 +147,9 @@ data class ModifiedFileContent(
     val path: String,
     val oldContent: String,
     val newContent: String,
+)
 
+data class NewAndExistingFiles(
+    val newFiles: MutableList<FileContent> = mutableListOf(),
+    val existingFiles: MutableList<FileContent> = mutableListOf()
 )
