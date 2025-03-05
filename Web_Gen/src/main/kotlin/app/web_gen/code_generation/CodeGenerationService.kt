@@ -1,5 +1,6 @@
 package app.web_gen.code_generation
 
+import app.web_gen.code_generation.request.FileConflictResolverRequest
 import app.web_gen.code_generation.response.FileContent
 import app.web_gen.code_generation.response.NewAndExistingFiles
 import app.web_gen.code_generation.response.ProjectCreationResponse
@@ -33,7 +34,9 @@ class CodeGenerationService(
     fun applyChanges(project: GeneratedProject, oldSnippet: CodeSnippet, replacedCode: String, newCode: String) {
         val path = Path(projectPathResolver.getUserFolderPath(), oldSnippet.relativePath)
         val updatedContent = oldSnippet.content.replace(replacedCode, newCode)
-        //TODO Update Snippet in DB
+
+        oldSnippet.content = updatedContent
+        oldSnippet.embedding = openAiService.generateEmbedding(oldSnippet.filename, updatedContent)
         codeSnippetRepository.save(oldSnippet)
         Files.writeString(path, updatedContent)
     }
@@ -42,13 +45,15 @@ class CodeGenerationService(
 
         var project = GeneratedProject(
             name = projectName,
-            codeToGenerate = "creationResponse.codeToGenerate",//TODO
+            codeToGenerateFiles = creationResponse.codeToGenerateFiles,
+            codeToInstallPackages = creationResponse.codeToInstallPackages,
             codeToRun = creationResponse.codeToRun
         )
         println(
             "${project.name}\n---\n" +
-                    "${project.codeToGenerate}\n---\n" +
-                    project.codeToRun
+                    "codeToGenerateFiles\n${project.codeToGenerateFiles}\n---\n" +
+                    "codeToInstallPackages\n${project.codeToInstallPackages}\n---\n" +
+                    "codeToRun\n${project.codeToRun}"
         )
         project = generatedProjectRepository.save(project)
 
@@ -95,8 +100,13 @@ class CodeGenerationService(
         val files = separateNewAndExistingFiles(project, modificationResponse)
         generateFiles(files.newFiles)
         //TODO Log Created files
+        val conflictRequest = FileConflictResolverRequest(
+            TODO("Find old existing files"),
+            files.existingFiles
+        )
+        openAiService.resolveFileConflict(modificationResponse.textResponse,conflictRequest)
         //TODO Return or request solution for conflicting files
-        files.existingFiles
+
     }
 
     private fun runGenerationCommand(projectPath: String, codeToGenerate: String, requiresCmd: Boolean) {

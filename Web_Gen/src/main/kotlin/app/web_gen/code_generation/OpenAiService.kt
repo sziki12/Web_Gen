@@ -1,5 +1,7 @@
 package app.web_gen.code_generation
 
+import app.web_gen.code_generation.request.FileConflictResolverRequest
+import app.web_gen.code_generation.response.FileConflictResolverResponse
 import app.web_gen.code_generation.response.ProjectCreationResponse
 import app.web_gen.code_generation.response.ProjectModificationResponse
 import app.web_gen.code_snippet.CodeSnippet
@@ -57,6 +59,28 @@ class OpenAiService(
         //TODO modify path if it doesn't contains the USER_ACCOUNT name find the package.json to start the project.
         val response = this.structuredResponse(prompt, ProjectCreationResponse.responseFormat)
         return gson.fromJson(response, ProjectCreationResponse::class.java)
+    }
+
+    fun resolveFileConflict(task: String, request: FileConflictResolverRequest){
+        val prompt = """
+            You generated already existing files for a task. Please resolve the file conflict.
+            The task:
+            $task
+            The existing files:
+            ${request.alreadyExistingFiles.map { """
+                ${it.path}
+                
+                ${it.content}
+            """.trimIndent()+"\n\n" }}
+            The new files:
+            ${request.alreadyExistingFiles.map { """
+                ${it.path}
+                
+                ${it.content}
+            """.trimIndent()+"\n\n" }}
+            
+        """.trimIndent()
+        val response = this.structuredResponse(prompt, FileConflictResolverResponse.responseFormat)
     }
 
     fun structuredResponse(prompt: String, responseFormat: String? = null): String {

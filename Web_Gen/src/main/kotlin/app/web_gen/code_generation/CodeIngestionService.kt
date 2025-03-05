@@ -37,7 +37,7 @@ class CodeIngestionService(
                     filename = file.fileName.toString(),
                     content = content,
                     embedding = embedding,
-                    relativePath = file.pathString //TODO Make it relative path
+                    relativePath = file.relativize(TODO("Make it relative path")).pathString
                 )
                 codeRepository.save(snippet)
             }

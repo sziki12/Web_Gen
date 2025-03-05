@@ -4,8 +4,9 @@ import app.web_gen.code_generation.response.FileContent
 
 data class FileConflictResolverRequest(
     var alreadyExistingFiles: MutableList<FileContent>,
-    val oldCodeToGenerate: String,
-    val oldCodeToRun: String,
+    var newlyGeneratedFiles: MutableList<FileContent>,
+    //val oldCodeToGenerate: String,
+    //val oldCodeToRun: String,
 )
 
 data class ProjectGenerationRequest(

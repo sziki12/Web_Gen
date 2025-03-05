@@ -8,7 +8,9 @@ import jakarta.persistence.*
 class GeneratedProject(
     var name: String,
     @Column(columnDefinition = "TEXT")
-    var codeToGenerate:String,
+    var codeToGenerateFiles:String,
+    @Column(columnDefinition = "TEXT")
+    var codeToInstallPackages:String,
     @Column(columnDefinition = "TEXT")
     var codeToRun:String,
     ) {

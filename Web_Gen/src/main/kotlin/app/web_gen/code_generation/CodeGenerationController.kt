@@ -39,8 +39,7 @@ class CodeGenerationController(
 
     @PostMapping("{projectName}/generate")
     fun generateCode(@RequestParam prompt: String, @PathVariable projectName: String): ResponseEntity<ProjectCreationResponse> {
-        //TODO Move to OpenAI Service projectGeneration
-        val response = openAiService.generateProject(projectName,prompt)
+        //val response = openAiService.generateProject(projectName,prompt)
         val responseString = """
             {
                 "textResponse": "To create a basic React web app for tracking, adding, removing, and modifying orders, follow the steps below.",
@@ -67,7 +66,7 @@ class CodeGenerationController(
                 ]
             }
             """.trimIndent()
-        //val response = gson.fromJson(responseString,ProjectCreationResponse::class.java)
+        val response = gson.fromJson(responseString,ProjectCreationResponse::class.java)
         codeGenerationService.generateProjectFiles(projectName,response)
         return ResponseEntity.ok(response)
 
