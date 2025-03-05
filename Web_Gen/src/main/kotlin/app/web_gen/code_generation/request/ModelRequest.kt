@@ -11,3 +11,18 @@ data class FileConflictResolverRequest(
 data class ProjectGenerationRequest(
     var projectName: String,
 )
+
+//Command error resolver
+//Given command
+//Error message
+
+//Response
+//Correct command
+
+//Code error resolver
+//Code error message
+//Relevant content
+
+//Response
+//Command to run
+//Modified files

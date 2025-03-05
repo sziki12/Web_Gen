@@ -8,6 +8,7 @@ import app.web_gen.code_snippet.CodeSnippet
 import app.web_gen.code_snippet.CodeSnippetRepository
 import app.web_gen.project.GeneratedProject
 import app.web_gen.project.GeneratedProjectRepository
+import app.web_gen.project.ProjectPathResolver
 import okhttp3.internal.notifyAll
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -23,14 +24,14 @@ class CodeGenerationService(
     private val codeSnippetRepository: CodeSnippetRepository,
     private val generatedProjectRepository: GeneratedProjectRepository,
     private val openAiService: OpenAiService,
-    private val commandSubstitutionService: CommandSubstitutionService
+    private val commandSubstitutionService: CommandSubstitutionService,
+    private val projectPathResolver: ProjectPathResolver,
 ) {
-    @Value(value = "\${generated.project.path}")
-    private lateinit var baseFilePath: String
+
 
     private val runningProcesses = mutableMapOf<String, Process>()
     fun applyChanges(project: GeneratedProject, oldSnippet: CodeSnippet, replacedCode: String, newCode: String) {
-        val path = Path(baseFilePath, project.name, oldSnippet.relativePath)
+        val path = Path(projectPathResolver.getUserFolderPath(), oldSnippet.relativePath)
         val updatedContent = oldSnippet.content.replace(replacedCode, newCode)
         //TODO Update Snippet in DB
         codeSnippetRepository.save(oldSnippet)
@@ -41,25 +42,37 @@ class CodeGenerationService(
 
         var project = GeneratedProject(
             name = projectName,
-            codeToGenerate = creationResponse.codeToGenerate,
+            codeToGenerate = "creationResponse.codeToGenerate",//TODO
             codeToRun = creationResponse.codeToRun
         )
-        println("${project.name}\n---\n" +
-                "${project.codeToGenerate}\n---\n" +
-                project.codeToRun
+        println(
+            "${project.name}\n---\n" +
+                    "${project.codeToGenerate}\n---\n" +
+                    project.codeToRun
         )
         project = generatedProjectRepository.save(project)
 
 
-        println("Generating")
-        println(creationResponse.codeToGenerate)
+        println("Generating files")
+        println(creationResponse.codeToGenerateFiles)
+        runGenerationCommand(
+            projectPathResolver.getUserFolderPath(),
+            creationResponse.codeToGenerateFiles,
+            true
+        )
 
-        runGenerationCommand(creationResponse.codeToGenerate)
+        println("Installing packages")
+        println(creationResponse.codeToInstallPackages)
+        runGenerationCommand(
+            projectPathResolver.getProjectPath(projectName),
+            creationResponse.codeToInstallPackages,
+            false
+        )
 
         println("Completed")
 
-        for(snippet in generateFiles(projectName,creationResponse.newFiles)){
-            codeSnippetRepository.save(snippet.also { it.project = project  } )
+        for (snippet in generateFiles(creationResponse.newFiles)) {
+            codeSnippetRepository.save(snippet.also { it.project = project })
         }
     }
 
@@ -80,18 +93,23 @@ class CodeGenerationService(
         }
         //Create new files if they to not exist
         val files = separateNewAndExistingFiles(project, modificationResponse)
-        generateFiles(projectName, files.newFiles)
+        generateFiles(files.newFiles)
         //TODO Log Created files
         //TODO Return or request solution for conflicting files
         files.existingFiles
     }
 
-    private fun runGenerationCommand(codeToGenerate: String) {
-        var commands = codeToGenerate.split(" ")
+    private fun runGenerationCommand(projectPath: String, codeToGenerate: String, requiresCmd: Boolean) {
+        var commands = if (requiresCmd)
+            listOf("cmd", "/C", *codeToGenerate.split(" ").toTypedArray())
+        else
+            codeToGenerate.split(" ")
+
         commands = commandSubstitutionService.substituteCommands(commands)
+        println(commands)
         val codeGeneration = ProcessBuilder()
             .command(commands)
-            .directory(File(this.baseFilePath)).inheritIO()
+            .directory(File(projectPath)).inheritIO()
         codeGeneration.start().waitFor()
     }
 
@@ -113,13 +131,13 @@ class CodeGenerationService(
         return out
     }
 
-    private fun generateFiles(projectName: String, newFiles: List<FileContent>): List<CodeSnippet> {
-        val projectPath = Path(this.baseFilePath, projectName).pathString
+    private fun generateFiles(newFiles: List<FileContent>): List<CodeSnippet> {
+        val userFolderPath = projectPathResolver.getUserFolderPath()
         var writer: PrintWriter
         val createdSnippets = mutableListOf<CodeSnippet>()
         for (newFile in newFiles) {
 
-            val file = File(Path(projectPath, newFile.path).toString())
+            val file = File(Path(userFolderPath, newFile.path).toString())
             val parent = File(file.parent)
             val codeSnippet = CodeSnippet(
                 file.name,
@@ -144,7 +162,8 @@ class CodeGenerationService(
 
     fun runApplication(projectName: String) {
         val project = generatedProjectRepository.findByName(projectName).get()
-        val projectPath = Path(this.baseFilePath, project.name).pathString
+        val projectPath = projectPathResolver.getProjectPath(projectName)
+        println(projectPath)
         //Run App
         println("Starting")
 

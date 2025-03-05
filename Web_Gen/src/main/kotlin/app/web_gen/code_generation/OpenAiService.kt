@@ -1,7 +1,9 @@
 package app.web_gen.code_generation
 
+import app.web_gen.code_generation.response.ProjectCreationResponse
 import app.web_gen.code_generation.response.ProjectModificationResponse
 import app.web_gen.code_snippet.CodeSnippet
+import com.google.gson.Gson
 import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.model.ChatResponse
@@ -26,6 +28,7 @@ class OpenAiService(
     val model: String
 ) {
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
+    val gson = Gson()
     fun modifyCode(query: String, relevantCode: List<CodeSnippet>): String {
         val content = relevantCode.joinToString("\n\n") { "File: ${it.relativePath}\n${it.content}" }
         val prompt = """
@@ -38,6 +41,22 @@ class OpenAiService(
         println("\n$content\n")
         val response = structuredResponse(prompt, ProjectModificationResponse.responseFormat)
         return response
+    }
+
+    fun generateProject(projectName: String, query: String): ProjectCreationResponse {//TODO Replace if Users added
+        val prompt = """
+            Root folder: USER_ACCOUNT 
+            Project Name: $projectName
+            The folder structure should be Root folder\\Project Name\\rest of the path.
+            The Path of the files should be the above mentioned path.
+            The root folder should not be created, it already exists.
+            The launch and the installation commands will be started from the Project Name folder, you dont have to cd there.
+            The folder creation command will be started from the Root folder, you dont have to cd there.
+            "Request: $query"
+        """.trimIndent()
+        //TODO modify path if it doesn't contains the USER_ACCOUNT name find the package.json to start the project.
+        val response = this.structuredResponse(prompt, ProjectCreationResponse.responseFormat)
+        return gson.fromJson(response, ProjectCreationResponse::class.java)
     }
 
     fun structuredResponse(prompt: String, responseFormat: String? = null): String {

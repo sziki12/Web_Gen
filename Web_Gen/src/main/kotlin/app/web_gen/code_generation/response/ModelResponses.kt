@@ -56,7 +56,8 @@ data class ProjectModificationResponse(
 
 data class ProjectCreationResponse(
     val textResponse: String,
-    val codeToGenerate: String,
+    val codeToGenerateFiles: String,
+    val codeToInstallPackages: String,
     val codeToRun: String,
     var newFiles: MutableList<FileContent>
 
@@ -71,13 +72,17 @@ data class ProjectCreationResponse(
       "type": "string",
       "description":"Brief response to the users request"
     },
-    "codeToGenerate": {
+    "codeToGenerateFiles": {
       "type": "string",
-      "description":"Code to generate the missing project files and make the project runnable without starting it. Only contains runnable code."
+      "description":"Code to generate the missing project files. Consider the Root folder the current directory and existing. Only contains runnable code for cmd."
+    },
+    "codeToInstallPackages": {
+      "type": "string",
+      "description":"Code to install the missing npm packages. It is launched from the project folder. Only contains runnable code for cmd."
     },
     "codeToRun": {
       "type": "string",
-      "description":"Code to run the application without the directory change. Only contains runnable code."
+      "description":"Code to run the application. The current directory is the project's directory. Only contains runnable code for cmd."
     },
     "newFiles": {
       "type": "array",
@@ -92,7 +97,7 @@ data class ProjectCreationResponse(
       }
     }
   },
-  "required": ["textResponse", "codeToRun", "codeToGenerate", "newFiles"],
+  "required": ["textResponse", "codeToRun", "codeToGenerateFiles","codeToInstallPackages", "newFiles"],
   "additionalProperties": false
 }
         """

@@ -38,14 +38,37 @@ class CodeGenerationController(
     }
 
     @PostMapping("{projectName}/generate")
-    fun generateCode(@RequestParam prompt: String, @PathVariable projectName: String): ResponseEntity<String> {
+    fun generateCode(@RequestParam prompt: String, @PathVariable projectName: String): ResponseEntity<ProjectCreationResponse> {
         //TODO Move to OpenAI Service projectGeneration
-        val response = openAiService.structuredResponse(prompt,ProjectCreationResponse.responseFormat)
-        /*val response = """
-            {"textResponse":"This application will allow users to track, add, remove, and modify orders. It will consist of a basic React front-end using functional components and React Hooks for managing state.","projectName":"order-tracker","codeToGenerate":"npx create-react-app order-tracker --template typescript\ncd order-tracker\nnpm install\n","codeToRun":"npm start","newFiles":[{"path":"src/components/OrderList.tsx","content":"import React from 'react';\nimport { Order } from '../types';\n\ninterface OrderListProps {\n  orders: Order[];\n  onDelete: (id: number) => void;\n  onEdit: (order: Order) => void;\n}\n\nconst OrderList: React.FC<OrderListProps> = ({ orders, onDelete, onEdit }) => {\n  return (\n    <div>\n      <h2>Order List</h2>\n      <ul>\n        {orders.map(order => (\n          <li key={order.id}>\n            <span>{order.name} - {order.quantity}</span>\n            <button onClick={() => onEdit(order)}>Edit</button>\n            <button onClick={() => onDelete(order.id)}>Delete</button>\n          </li>\n        ))}\n      </ul>\n    </div>\n  );\n}\n\nexport default OrderList;\n"},{"path":"src/components/OrderForm.tsx","content":"import React, { useState, useEffect } from 'react';\nimport { Order } from '../types';\n\ninterface OrderFormProps {\n  order?: Order;\n  onSave: (order: Order) => void;\n}\n\nconst OrderForm: React.FC<OrderFormProps> = ({ order, onSave }) => {\n  const [name, setName] = useState(order ? order.name : '');\n  const [quantity, setQuantity] = useState(order ? order.quantity : 0);\n  const [id, setId] = useState(order ? order.id : Math.floor(Math.random() * 1000));\n\n  useEffect(() => {\n    if (order) {\n      setName(order.name);\n      setQuantity(order.quantity);\n      setId(order.id);\n    }\n  }, [order]);\n\n  const handleSubmit = (event: React.FormEvent) => {\n    event.preventDefault();\n    onSave({ id, name, quantity });\n  };\n\n  return (\n    <form onSubmit={handleSubmit}>\n      <div>\n        <label>Name:</label>\n        <input type=\"text\" value={name} onChange={e => setName(e.target.value)} />\n      </div>\n      <div>\n        <label>Quantity:</label>\n        <input type=\"number\" value={quantity} onChange={e => setQuantity(parseInt(e.target.value))} />\n      </div>\n      <button type=\"submit\">Save</button>\n    </form>\n  );\n};\n\nexport default OrderForm;\n"},{"path":"src/types.ts","content":"export interface Order {\n  id: number;\n  name: string;\n  quantity: number;\n}\n"},{"path":"src/App.tsx","content":"import React, { useState } from 'react';\nimport OrderList from './components/OrderList';\nimport OrderForm from './components/OrderForm';\nimport { Order } from './types';\n\nconst App: React.FC = () => {\n  const [orders, setOrders] = useState<Order[]>([]);\n  const [currentOrder, setCurrentOrder] = useState<Order | undefined>(undefined);\n\n  const addOrder = (order: Order) => {\n    setOrders([...orders, order]);\n    setCurrentOrder(undefined);\n  };\n\n  const editOrder = (order: Order) => {\n    setOrders(orders.map(o => (o.id === order.id ? order : o)));\n    setCurrentOrder(undefined);\n  };\n\n  const deleteOrder = (id: number) => {\n    setOrders(orders.filter(order => order.id !== id));\n  };\n\n  const handleEditClick = (order: Order) => {\n    setCurrentOrder(order);\n  };\n\n  return (\n    <div>\n      <h1>Order Tracker</h1>\n      <OrderForm order={currentOrder} onSave={currentOrder ? editOrder : addOrder} />\n      <OrderList orders={orders} onDelete={deleteOrder} onEdit={handleEditClick} />\n    </div>\n  );\n};\n\nexport default App;\n"}],"modifiedFiles":[{"path":"src/index.tsx","oldContent":"import React from 'react';\nimport ReactDOM from 'react-dom';\nimport './index.css';\nimport App from './App';\nimport reportWebVitals from './reportWebVitals';\n\nReactDOM.render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>,\n  document.getElementById('root')\n);\n\nreportWebVitals();","newContent":"import React from 'react';\nimport ReactDOM from 'react-dom/client';\nimport './index.css';\nimport App from './App';\n\nconst root = ReactDOM.createRoot(\n  document.getElementById('root') as HTMLElement\n);\n\nroot.render(\n  <React.StrictMode>\n    <App />\n  </React.StrictMode>\n);\n"}]}
-            """.trimIndent()*/
-        val modelResponse = gson.fromJson(response, ProjectCreationResponse::class.java)
-        codeGenerationService.generateProjectFiles(projectName,modelResponse)
+        val response = openAiService.generateProject(projectName,prompt)
+        val responseString = """
+            {
+                "textResponse": "To create a basic React web app for tracking, adding, removing, and modifying orders, follow the steps below.",
+                "codeToGenerateFiles": "npx create-react-app app4.0",
+                "codeToInstallPackages": "npm install react-redux redux react-router-dom",
+                "codeToRun": "npm start",
+                "newFiles": [
+                    {
+                        "path": "app4.0/src/components/OrderList.js",
+                        "content": "import React from 'react';\n\nconst OrderList = ({ orders, onEdit, onDelete }) => {\n  return (\n    <div>\n      <h2>Order List</h2>\n      <ul>\n        {orders.map((order) => (\n          <li key={order.id}>\n            <span>{order.name}</span>\n            <button onClick={() => onEdit(order.id)}>Edit</button>\n            <button onClick={() => onDelete(order.id)}>Delete</button>\n          </li>\n        ))}\n      </ul>\n    </div>\n  );\n};\n\nexport default OrderList;"
+                    },
+                    {
+                        "path": "app4.0/src/components/AddOrder.js",
+                        "content": "import React, { useState } from 'react';\n\nconst AddOrder = ({ onAdd }) => {\n  const [order, setOrder] = useState('');\n\n  const handleSubmit = (event) => {\n    event.preventDefault();\n    if (order) {\n      onAdd(order);\n      setOrder('');\n    }\n  };\n\n  return (\n    <form onSubmit={handleSubmit}>\n      <input\n        type=\"text\"\n        value={order}\n        onChange={(e) => setOrder(e.target.value)}\n        placeholder=\"Add new order\"\n      />\n      <button type=\"submit\">Add Order</button>\n    </form>\n  );\n};\n\nexport default AddOrder;"
+                    },
+                    {
+                        "path": "app4.0/src/App.js",
+                        "content": "import React, { useState } from 'react';\nimport AddOrder from './components/AddOrder';\nimport OrderList from './components/OrderList';\nimport './App.css';\n\nfunction App() {\n  const [orders, setOrders] = useState([]);\n\n  const addOrder = (name) => {\n    const newOrder = { id: Date.now(), name };\n    setOrders([...orders, newOrder]);\n  };\n\n  const deleteOrder = (id) => {\n    setOrders(orders.filter((order) => order.id !== id));\n  };\n\n  const editOrder = (id) => {\n    const newName = prompt(\"Enter the new order name:\");\n    if (newName) {\n      setOrders(orders.map(\n        order => order.id === id ? { ...order, name: newName } : order\n      ));\n    }\n  };\n\n  return (\n    <div className=\"App\">\n      <h1>Order Tracker</h1>\n      <AddOrder onAdd={addOrder} />\n      <OrderList orders={orders} onEdit={editOrder} onDelete={deleteOrder} />\n    </div>\n  );\n}\n\nexport default App;"
+                    },
+                    {
+                        "path": "app4.0/src/App.css",
+                        "content": "body {\n  font-family: Arial, sans-serif;\n  background-color: #f0f0f0;\n  margin: 0;\n  padding: 0;\n}\n\n.App {\n  max-width: 600px;\n  margin: 50px auto;\n  padding: 20px;\n  background-color: #fff;\n  border-radius: 8px;\n  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);\n}\n\nbutton {\n  margin-left: 8px;\n  padding: 5px 10px;\n  background-color: #007bff;\n  color: #fff;\n  border: none;\n  border-radius: 4px;\n  cursor: pointer;\n}\n\nbutton:hover {\n  background-color: #0056b3;\n}"
+                    }
+                ]
+            }
+            """.trimIndent()
+        //val response = gson.fromJson(responseString,ProjectCreationResponse::class.java)
+        codeGenerationService.generateProjectFiles(projectName,response)
         return ResponseEntity.ok(response)
 
     }
