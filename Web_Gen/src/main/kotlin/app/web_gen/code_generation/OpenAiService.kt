@@ -61,7 +61,7 @@ class OpenAiService(
         return gson.fromJson(response, ProjectCreationResponse::class.java)
     }
 
-    fun resolveFileConflict(task: String, request: FileConflictResolverRequest){
+    fun resolveFileConflict(task: String, request: FileConflictResolverRequest): FileConflictResolverResponse{
         val prompt = """
             You generated already existing files for a task. Please resolve the file conflict.
             The task:
@@ -80,7 +80,8 @@ class OpenAiService(
             """.trimIndent()+"\n\n" }}
             
         """.trimIndent()
-        val response = this.structuredResponse(prompt, FileConflictResolverResponse.responseFormat)
+        val responseString = this.structuredResponse(prompt, FileConflictResolverResponse.responseFormat)
+        return gson.fromJson(responseString,FileConflictResolverResponse::class.java)
     }
 
     fun structuredResponse(prompt: String, responseFormat: String? = null): String {

@@ -11,4 +11,6 @@ interface CodeSnippetRepository : JpaRepository<CodeSnippet, Long> {
 
     fun findByProjectIdAndFilename(projectId: Long, filename: String): Optional<CodeSnippet>
     fun existsByProjectIdAndFilename(projectId: Long, filename: String): Boolean
+
+    fun findByProjectIdAndRelativePathIn(projectId: Long, relativePath: Collection<String>):MutableList<CodeSnippet>
 }

@@ -10,6 +10,7 @@ import app.web_gen.code_snippet.CodeSnippetRepository
 import app.web_gen.project.GeneratedProject
 import app.web_gen.project.GeneratedProjectRepository
 import app.web_gen.project.ProjectPathResolver
+import groovy.json.StringEscapeUtils
 import okhttp3.internal.notifyAll
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -31,13 +32,29 @@ class CodeGenerationService(
 
 
     private val runningProcesses = mutableMapOf<String, Process>()
-    fun applyChanges(project: GeneratedProject, oldSnippet: CodeSnippet, replacedCode: String, newCode: String) {
+    fun applyChanges(
+        project: GeneratedProject,
+        oldSnippet: CodeSnippet,
+        unescapedReplacedCode: String,
+        newCode: String
+    ) {
         val path = Path(projectPathResolver.getUserFolderPath(), oldSnippet.relativePath)
-        val updatedContent = oldSnippet.content.replace(replacedCode, newCode)
+        val escapedReplacedCode = StringEscapeUtils.unescapeJava(unescapedReplacedCode)
 
-        oldSnippet.content = updatedContent
-        oldSnippet.embedding = openAiService.generateEmbedding(oldSnippet.filename, updatedContent)
-        codeSnippetRepository.save(oldSnippet)
+        var updatedContent = oldSnippet.content.replace(escapedReplacedCode, newCode)
+        //If replace fails, replace the whole file
+        if (updatedContent == oldSnippet.content) {
+            updatedContent = newCode
+        }
+
+        val updated = codeSnippetRepository.save(oldSnippet.apply {
+            this.content = updatedContent
+            this.embedding = openAiService.generateEmbedding(oldSnippet.filename, updatedContent)
+        })
+        //TODO Check why modification fails
+        //println("ESCAPED: ${updated.relativePath}\n${escapedReplacedCode}\n\n")
+        //println("NEW: ${updated.relativePath}\n${newCode}\n\n")
+        //println("UPDATED: ${updated.relativePath}\n${updated.content}\n\n")
         Files.writeString(path, updatedContent)
     }
 
@@ -76,9 +93,7 @@ class CodeGenerationService(
 
         println("Completed")
 
-        for (snippet in generateFiles(creationResponse.newFiles)) {
-            codeSnippetRepository.save(snippet.also { it.project = project })
-        }
+        generateFiles(project, creationResponse.newFiles)
     }
 
     fun updateProjectFiles(
@@ -98,15 +113,43 @@ class CodeGenerationService(
         }
         //Create new files if they to not exist
         val files = separateNewAndExistingFiles(project, modificationResponse)
-        generateFiles(files.newFiles)
+        println("files:\n$files\n\n")
+        generateFiles(project, files.newFiles)
         //TODO Log Created files
-        val conflictRequest = FileConflictResolverRequest(
-            TODO("Find old existing files"),
-            files.existingFiles
-        )
-        openAiService.resolveFileConflict(modificationResponse.textResponse,conflictRequest)
-        //TODO Return or request solution for conflicting files
 
+        if (files.existingFiles.isNotEmpty()) {
+            val oldFiles = project.id?.let { id ->
+                codeSnippetRepository.findByProjectIdAndRelativePathIn(
+                    id,
+                    files.existingFiles.map { file -> file.path })
+            } ?: mutableListOf()
+            val conflictRequest = FileConflictResolverRequest(
+                oldFiles.map { FileContent(it.relativePath, it.content) }.toMutableList(),
+                files.existingFiles
+            )
+            println("conflictRequest:\n$conflictRequest\n\n")
+            val conflictResolveResponse =
+                openAiService.resolveFileConflict(modificationResponse.textResponse, conflictRequest)
+            println("conflictResolveResponse:\n$conflictResolveResponse\n\n")
+            //TODO Check the file.path, it doesn't contains the projectName
+            conflictResolveResponse.modifiedFiles.forEach { file ->
+                val snippet = oldFiles.singleOrNull { it.relativePath == file.path }
+                if (snippet != null) {
+                    applyChanges(project, snippet, file.oldContent, file.newContent)
+                } else {
+                    println("No existing Snippet for ${file.path}")
+                }
+            }
+        }
+        try {
+            runGenerationCommand(
+                projectPathResolver.getProjectPath(projectName),
+                modificationResponse.codeToGenerate,
+                false
+            )
+        } catch (e: Exception) {
+            println("FAILED  to run GENERATION Command:\n${modificationResponse.codeToGenerate}\n${e.message}")
+        }
     }
 
     private fun runGenerationCommand(projectPath: String, codeToGenerate: String, requiresCmd: Boolean) {
@@ -141,7 +184,7 @@ class CodeGenerationService(
         return out
     }
 
-    private fun generateFiles(newFiles: List<FileContent>): List<CodeSnippet> {
+    private fun generateFiles(project: GeneratedProject, newFiles: List<FileContent>): List<CodeSnippet> {
         val userFolderPath = projectPathResolver.getUserFolderPath()
         var writer: PrintWriter
         val createdSnippets = mutableListOf<CodeSnippet>()
@@ -154,7 +197,9 @@ class CodeGenerationService(
                 newFile.path,
                 newFile.content,
                 openAiService.generateEmbedding(file.name, newFile.content),
-            )
+            ).also {
+                it.project = project
+            }
             createdSnippets.add(codeSnippetRepository.save(codeSnippet))
 
             if (!file.exists()) {
