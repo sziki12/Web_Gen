@@ -1,5 +1,3 @@
-version: '0.2'
-
 services:
   postgres:
     image: pgvector/pgvector:pg17 # PostgreSQL with pgvector support

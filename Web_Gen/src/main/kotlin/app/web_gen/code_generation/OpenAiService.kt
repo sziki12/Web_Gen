@@ -24,14 +24,14 @@ import org.springframework.stereotype.Service
 
 @Service
 class OpenAiService(
-    @Value("\${spring.ai.openai.api-key}")
-    val apiKey: String,
-    @Value("\${spring.ai.openai.model}")
-    val model: String
+        @Value("\${spring.ai.openai.api-key}")
+        val apiKey: String,
+        @Value("\${spring.ai.openai.model}")
+        val model: String
 ) {
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
     val gson = Gson()
-    fun modifyCode(query: String, relevantCode: List<CodeSnippet>): String {
+    fun modifyCode(query: String, relevantCode: List<CodeSnippet>): ProjectModificationResponse {
         val content = relevantCode.joinToString("\n\n") { "File: ${it.relativePath}\n${it.content}" }
         val prompt = """
             You are an expert developer. Modify the following code based on this request: $query.
@@ -42,7 +42,7 @@ class OpenAiService(
         """.trimIndent()
         println("\n$content\n")
         val response = structuredResponse(prompt, ProjectModificationResponse.responseFormat)
-        return response
+        return gson.fromJson(response, ProjectModificationResponse::class.java)
     }
 
     fun generateProject(projectName: String, query: String): ProjectCreationResponse {//TODO Replace if Users added
@@ -61,27 +61,35 @@ class OpenAiService(
         return gson.fromJson(response, ProjectCreationResponse::class.java)
     }
 
-    fun resolveFileConflict(task: String, request: FileConflictResolverRequest): FileConflictResolverResponse{
+    fun resolveFileConflict(task: String, request: FileConflictResolverRequest): FileConflictResolverResponse {
         val prompt = """
             You generated already existing files for a task. Please resolve the file conflict.
             The task:
             $task
             The existing files:
-            ${request.alreadyExistingFiles.map { """
+            ${
+            request.alreadyExistingFiles.map {
+                """
                 ${it.path}
                 
                 ${it.content}
-            """.trimIndent()+"\n\n" }}
+            """.trimIndent() + "\n\n"
+            }
+        }
             The new files:
-            ${request.alreadyExistingFiles.map { """
+            ${
+            request.alreadyExistingFiles.map {
+                """
                 ${it.path}
                 
                 ${it.content}
-            """.trimIndent()+"\n\n" }}
+            """.trimIndent() + "\n\n"
+            }
+        }
             
         """.trimIndent()
         val responseString = this.structuredResponse(prompt, FileConflictResolverResponse.responseFormat)
-        return gson.fromJson(responseString,FileConflictResolverResponse::class.java)
+        return gson.fromJson(responseString, FileConflictResolverResponse::class.java)
     }
 
     fun structuredResponse(prompt: String, responseFormat: String? = null): String {
@@ -98,12 +106,12 @@ class OpenAiService(
         })
 
         val response: ChatResponse = chatModel.call(
-            Prompt(
-                listOf(
-                    SystemMessage("You are an expert web app developer. Create or modify an application based on given input."),
-                    UserMessage(prompt)
-                ),
-            )
+                Prompt(
+                        listOf(
+                                SystemMessage("You are an expert web app developer. Create or modify an application based on given input."),
+                                UserMessage(prompt)
+                        ),
+                )
         )
         //TODO Generate cmd commands to create missing files, and run the application.
         println("Response")
@@ -112,10 +120,10 @@ class OpenAiService(
 
     fun generateEmbedding(vararg query: String): FloatArray {
         val embeddingResponse: EmbeddingResponse = embeddingModel.call(
-            EmbeddingRequest(
-                listOf(*query),
-                OpenAiEmbeddingOptions.builder().build()
-            )
+                EmbeddingRequest(
+                        listOf(*query),
+                        OpenAiEmbeddingOptions.builder().build()
+                )
         )
         return embeddingResponse.result.output
     }

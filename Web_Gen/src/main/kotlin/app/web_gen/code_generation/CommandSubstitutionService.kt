@@ -18,6 +18,7 @@ class CommandSubstitutionService {
     }
 
     private final fun loadCommands() {
+        println("Filepath: $filePath")
         val file = File(filePath)
         if (file.exists()) {
             val sc = Scanner(file)
