@@ -1,7 +1,11 @@
 package app.web_gen.code_generation
 
-import app.web_gen.code_generation.response.ModelResponse
+import app.web_gen.code_generation.request.FileConflictResolverRequest
+import app.web_gen.code_generation.response.FileConflictResolverResponse
+import app.web_gen.code_generation.response.ProjectCreationResponse
+import app.web_gen.code_generation.response.ProjectModificationResponse
 import app.web_gen.code_snippet.CodeSnippet
+import com.google.gson.Gson
 import org.springframework.ai.chat.messages.SystemMessage
 import org.springframework.ai.chat.messages.UserMessage
 import org.springframework.ai.chat.model.ChatResponse
@@ -20,37 +24,94 @@ import org.springframework.stereotype.Service
 
 @Service
 class OpenAiService(
-    @Value("\${spring.ai.openai.api-key}")
-    val apiKey: String
+        @Value("\${spring.ai.openai.api-key}")
+        val apiKey: String,
+        @Value("\${spring.ai.openai.model}")
+        val model: String
 ) {
-
-    val chatModel = OpenAiChatModel(OpenAiApi(apiKey), OpenAiChatOptions().apply {
-        this.model = "gpt-4o"
-        this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, ModelResponse.responseFormat)
-    })
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
-    fun modifyCode(query: String, relevantCode: List<CodeSnippet>): String {
+    val gson = Gson()
+    fun modifyCode(query: String, relevantCode: List<CodeSnippet>): ProjectModificationResponse {
+        val content = relevantCode.joinToString("\n\n") { "File: ${it.relativePath}\n${it.content}" }
         val prompt = """
             You are an expert developer. Modify the following code based on this request: $query.
             Make only necessary changes and return the updated code.
 
             Relevant code:
-            ${relevantCode.joinToString("\n\n") { "File: ${it.filename}\n${it.content}" }}
+            $content
         """.trimIndent()
-
-        val response = generateCompletion(prompt)
-        return response
+        println("\n$content\n")
+        val response = structuredResponse(prompt, ProjectModificationResponse.responseFormat)
+        return gson.fromJson(response, ProjectModificationResponse::class.java)
     }
 
-    fun generateCompletion(prompt: String): String {
+    fun generateProject(projectName: String, query: String): ProjectCreationResponse {//TODO Replace if Users added
+        val prompt = """
+            Root folder: USER_ACCOUNT 
+            Project Name: $projectName
+            The folder structure should be Root folder\\Project Name\\rest of the path.
+            The Path of the files should be the above mentioned path.
+            The root folder should not be created, it already exists.
+            The launch and the installation commands will be started from the Project Name folder, you dont have to cd there.
+            The folder creation command will be started from the Root folder, you dont have to cd there.
+            "Request: $query"
+        """.trimIndent()
+        //TODO modify path if it doesn't contains the USER_ACCOUNT name find the package.json to start the project.
+        val response = this.structuredResponse(prompt, ProjectCreationResponse.responseFormat)
+        return gson.fromJson(response, ProjectCreationResponse::class.java)
+    }
+
+    fun resolveFileConflict(task: String, request: FileConflictResolverRequest): FileConflictResolverResponse {
+        val prompt = """
+            You generated already existing files for a task. Please resolve the file conflict.
+            The task:
+            $task
+            The existing files:
+            ${
+            request.alreadyExistingFiles.map {
+                """
+                ${it.path}
+                
+                ${it.content}
+            """.trimIndent() + "\n\n"
+            }
+        }
+            The new files:
+            ${
+            request.alreadyExistingFiles.map {
+                """
+                ${it.path}
+                
+                ${it.content}
+            """.trimIndent() + "\n\n"
+            }
+        }
+            
+        """.trimIndent()
+        val responseString = this.structuredResponse(prompt, FileConflictResolverResponse.responseFormat)
+        return gson.fromJson(responseString, FileConflictResolverResponse::class.java)
+    }
+
+    fun structuredResponse(prompt: String, responseFormat: String? = null): String {
         println("Call")
+        val chatModel = OpenAiChatModel(OpenAiApi(apiKey), OpenAiChatOptions().apply {
+            this.model = this@OpenAiService.model
+            responseFormat?.let {
+                try {
+                    this.responseFormat = ResponseFormat(ResponseFormat.Type.JSON_SCHEMA, responseFormat)
+                } catch (e: Exception) {
+                    System.err.println("Parsing response format FAILED:\n$responseFormat")
+                }
+            }
+        })
+
         val response: ChatResponse = chatModel.call(
-            Prompt(
-                listOf(
-                    SystemMessage("You are an expert web app developer. Create or modify an application based on given input."),
-                    UserMessage(prompt)
-                ),
-            )
+                Prompt(
+                        listOf(
+                                SystemMessage("You are an expert web app developer. Create or modify an application based on given input."),
+                                UserMessage(prompt)
+                        ),
+                )
         )
         //TODO Generate cmd commands to create missing files, and run the application.
         println("Response")
@@ -59,10 +120,10 @@ class OpenAiService(
 
     fun generateEmbedding(vararg query: String): FloatArray {
         val embeddingResponse: EmbeddingResponse = embeddingModel.call(
-            EmbeddingRequest(
-                listOf(*query),
-                OpenAiEmbeddingOptions.builder().build()
-            )
+                EmbeddingRequest(
+                        listOf(*query),
+                        OpenAiEmbeddingOptions.builder().build()
+                )
         )
         return embeddingResponse.result.output
     }

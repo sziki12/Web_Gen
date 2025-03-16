@@ -9,15 +9,16 @@ import io.hypersistence.utils.hibernate.type.json.JsonType;
 @Table(name = "code_snippets")
 data class CodeSnippet(
 
-    val filename: String,
+    var filename: String,
+    var relativePath: String,
 
     @Column(columnDefinition = "TEXT")
-    val content: String,
+    var content: String,
 
     @Basic
     @Type(JsonType::class)
     @Column(columnDefinition = "vector(1536)") // Assuming 1536-dimensional OpenAI embeddings
-    val embedding: FloatArray,
+    var embedding: FloatArray,
 ) {
 
     @ManyToOne

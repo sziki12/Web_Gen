@@ -18,6 +18,7 @@ class CommandSubstitutionService {
     }
 
     private final fun loadCommands() {
+        println("Filepath: $filePath")
         val file = File(filePath)
         if (file.exists()) {
             val sc = Scanner(file)
@@ -41,11 +42,11 @@ class CommandSubstitutionService {
                 outCommand = if (outCommand == key) {
                     it
                 } else {
-                    outCommand.replace(key, it)
+                    outCommand.replace(key, "\'$it\'")
                 }
             }
         }
-        return outCommand
+        return  outCommand
     }
 
     fun substituteCommands(commands: List<String>): List<String> {

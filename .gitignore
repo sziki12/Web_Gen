@@ -27,3 +27,4 @@ replay_pid*
 .kotlin/
 /Web_Gen/src/main/resources/generated
 Web_Gen/src/main/resources/substitutableCommands.txt
+/.idea
