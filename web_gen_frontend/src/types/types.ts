@@ -1,11 +1,15 @@
-import {JSX} from "react";
 import {SvgIconClasses} from "@mui/material";
+import {RouteObject} from "react-router-dom";
+import {JSX} from "react";
 
 
-export type Route = {
-    path:String,
-    element:JSX.Element,
+export type BasicRoute = RouteObject & {
     isProtected:boolean,
-    icon?:SvgIconClasses
-
 }
+
+export type MenuItemRoute = BasicRoute & {
+    name:string,
+    icon: JSX.Element
+}
+
+export type ComplexRoute = BasicRoute | MenuItemRoute
