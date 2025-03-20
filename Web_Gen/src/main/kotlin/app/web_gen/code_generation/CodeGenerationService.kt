@@ -37,7 +37,7 @@ class CodeGenerationService(
     ) {
         val path = Path(projectPathResolver.getUserFolderPath(), oldSnippet.relativePath)
         val escapedReplacedCode = StringEscapeUtils.unescapeJava(unescapedReplacedCode)
-
+generatedProjectRepository
         var updatedContent = oldSnippet.content.replace(escapedReplacedCode, newCode)
         //If replace fails, replace the whole file
         if (updatedContent == oldSnippet.content) {

@@ -17,4 +17,12 @@ class ProjectPathResolver {
         val tempUser = "USER_ACCOUNT"
         return Path(baseFilePath,tempUser).pathString
     }
+
+    fun getWorkingPath(): String{
+        return System.getProperty("user.dir")
+    }
+
+    fun getResourcesPath(): String{
+        return Path(System.getProperty("user.dir"),"src/main/resources").pathString
+    }
 }

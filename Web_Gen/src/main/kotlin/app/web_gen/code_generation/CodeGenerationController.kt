@@ -5,33 +5,42 @@ import app.web_gen.code_generation.response.ProjectModificationResponse
 import app.web_gen.code_running.CodeRunnerService
 import app.web_gen.code_snippet.CodeSnippetRepository
 import app.web_gen.project.GeneratedProjectRepository
+import app.web_gen.project.ProjectPathResolver
 import app.web_gen.test_response.testGenerateResponse
 import app.web_gen.test_response.testModifyResponse
+import app.web_gen.zip.ZipDirectory
 import com.google.gson.Gson
+import org.apache.tomcat.util.http.fileupload.IOUtils
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import kotlin.properties.Delegates
+import java.io.BufferedOutputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.util.zip.ZipOutputStream
+
 
 @RestController
 @RequestMapping("/api/code")
 class CodeGenerationController(
-        private val codeRepository: CodeSnippetRepository,
-        private val projectRepository: GeneratedProjectRepository,
-        private val codeGenerationService: CodeGenerationService,
-        private val codeRunnerService: CodeRunnerService,
-        private val openAiService: OpenAiService,
+    private val codeRepository: CodeSnippetRepository,
+    private val projectRepository: GeneratedProjectRepository,
+    private val codeGenerationService: CodeGenerationService,
+    private val codeRunnerService: CodeRunnerService,
+    private val openAiService: OpenAiService,
+    private val projectPathResolver: ProjectPathResolver,
+    private val zipDirectory: ZipDirectory,
 ) {
     private val gson: Gson = Gson().newBuilder().create()
 
     @Value("\${spring.ai.openai.use-test-responses}")
-    var useTestResponses:Boolean = true
+    var useTestResponses: Boolean = true
 
 
     @PostMapping("/{projectName}/modify")
     fun modifyCode(
-            @RequestParam query: String,
-            @PathVariable projectName: String
+        @RequestParam query: String,
+        @PathVariable projectName: String
     ): ResponseEntity<ProjectModificationResponse> {
 
         try {
@@ -51,8 +60,8 @@ class CodeGenerationController(
 
     @PostMapping("{projectName}/generate")
     fun generateCode(
-            @RequestParam prompt: String,
-            @PathVariable projectName: String
+        @RequestParam prompt: String,
+        @PathVariable projectName: String
     ): ResponseEntity<ProjectCreationResponse> {
         val generatedCode = if (useTestResponses) {
             gson.fromJson(testGenerateResponse, ProjectCreationResponse::class.java)
@@ -66,8 +75,8 @@ class CodeGenerationController(
 
     @GetMapping("/{projectName}/query")
     fun findRelevantSnippets(
-            @RequestParam query: String,
-            @PathVariable projectName: String
+        @RequestParam query: String,
+        @PathVariable projectName: String
     ): ResponseEntity<List<String>> {
         val transformedQuery = openAiService.generateEmbedding(query)
         val relevantSnippets = codeRepository.findRelevantSnippets(projectName, transformedQuery, limit = 2)
@@ -94,5 +103,26 @@ class CodeGenerationController(
         } catch (e: Exception) {
             return ResponseEntity.notFound().build()
         }
+    }
+
+    @GetMapping(value = ["{projectName}/zip"], produces = ["application/zip"])
+    fun downloadProject(@PathVariable projectName: String): ResponseEntity<ByteArray> {
+        val byteArrayOutputStream = ByteArrayOutputStream()
+        val bufferedOutputStream = BufferedOutputStream(byteArrayOutputStream)
+        val zipOutputStream = ZipOutputStream(bufferedOutputStream)
+
+        val file = File(projectPathResolver.getProjectPath(projectName))
+        println("path: ${file.absolutePath}")
+        zipDirectory.zip(file, projectName, zipOutputStream)
+
+        IOUtils.closeQuietly(bufferedOutputStream)
+        IOUtils.closeQuietly(byteArrayOutputStream)
+        val response = ResponseEntity
+            .ok()
+            .header("Content-Disposition", "attachment; filename=\"files.zip\"")
+            .body(byteArrayOutputStream.toByteArray())
+
+
+        return response
     }
 }

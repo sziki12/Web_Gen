@@ -1,5 +1,6 @@
 package app.web_gen.code_generation
 
+import app.web_gen.project.ProjectPathResolver
 import org.springframework.stereotype.Service
 import java.io.File
 import java.util.*
@@ -7,18 +8,20 @@ import kotlin.io.path.Path
 import kotlin.io.path.pathString
 
 @Service
-class CommandSubstitutionService {
+class CommandSubstitutionService(
+    private val pathResolver: ProjectPathResolver
+) {
     val substitutableCommands = mutableMapOf<String, String>()
 
     private val filePath =
-        Path(System.getProperty("user.dir"), "src/main/resources/substitutableCommands.txt").pathString
+        Path(pathResolver.getResourcesPath(), "substitutableCommands.txt").pathString
 
     init {
         loadCommands()
     }
 
     private final fun loadCommands() {
-        println("Filepath: $filePath")
+        println("CommandSubstitutionService Config Filepath: $filePath")
         val file = File(filePath)
         if (file.exists()) {
             val sc = Scanner(file)
