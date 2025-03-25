@@ -4,12 +4,13 @@ import '../App.css';
 import Iframe from 'react-iframe'
 import ProjectForm from "./ProjectForm";
 import PageComponent from "../components/PageComponent";
+import ProjectModification from "./ProjectModification";
 
 function LiveView() {
     return (
         <div className="App">
             <div className={"App-content"}>
-                <ProjectForm></ProjectForm>
+                <ProjectModification/>
             </div>
             <Iframe
                 className={"App-content"}

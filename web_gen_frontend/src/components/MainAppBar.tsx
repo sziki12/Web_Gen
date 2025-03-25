@@ -26,13 +26,12 @@ export default function MenuAppBar() {
                             sx={{mr: 2}}
                             onClick={() => {
                                 toggleMenu(true)
-                                console.log("OPEN")
                             }}
                         >
                             <MenuIcon/>
                         </IconButton>
                         <Typography variant="h6" component="div" sx={{flexGrow: 1}}>
-                            My Project
+                            Web Gen
                         </Typography>
                         <ProfileAvatar/>
 

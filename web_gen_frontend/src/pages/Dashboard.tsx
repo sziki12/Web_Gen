@@ -2,11 +2,12 @@ import React from "react";
 import {Container, Card, CardContent, Typography, Button} from "@mui/material";
 import Grid from '@mui/material/Grid2';
 import {DataGrid} from "@mui/x-data-grid";
+import {useNavigate} from "react-router-dom";
 
 const rows = [
-    {id: 1, name: "Project Alpha", status: "Completed"},
-    {id: 2, name: "Project Beta", status: "In Progress"},
-    {id: 3, name: "Project Gamma", status: "Pending"},
+    {id: 1, name: "Project Alpha", status: "Running"},
+    {id: 2, name: "Project Beta", status: "Stopped"},
+    {id: 3, name: "Project Gamma", status: "Error"},
 ];
 
 const columns = [
@@ -16,6 +17,9 @@ const columns = [
 ];
 
 const Dashboard = () => {
+
+    const navigate = useNavigate()
+
     return (
         <Container maxWidth="lg" sx={{mt: 4}}>
             <Typography variant="h4" gutterBottom>
@@ -50,8 +54,11 @@ const Dashboard = () => {
             <Typography variant="h5" sx={{mt: 4, mb: 2}}>
                 Recent Projects
             </Typography>
-            <DataGrid rows={rows} columns={columns}/>
-            <Button variant="contained" color="primary" sx={{mt: 2}}>
+            <DataGrid onRowClick={(params, event, details)=>{
+                console.log(params.row)
+                navigate(`/modify/${params.row.id}`)
+            }} rows={rows} columns={columns}/>
+            <Button variant="contained" color="primary" sx={{mt: 2}} onClick={()=>{navigate("/generate")}}>
                 Generate New Project
             </Button>
         </Container>

@@ -13,36 +13,36 @@ import ProjectModification from "../pages/ProjectModification";
 export default function AppRoutes() {
     const routes: ComplexRoute[] = [
         {
-            path: '/live',
-            element: LiveView(),
+            path: '/live/edit',
+            element: <LiveView/>,
             isProtected: false,
             name: "Live View",
             icon: <FontAwesomeIcon icon={faHouse}/>
         },
         {
             path: '/dashboard',
-            element: Dashboard(),
+            element: <Dashboard/>,
             isProtected: false,
             name: "Dashboard",
             icon: <FontAwesomeIcon icon={faTableColumns}/>
         },
         {
             path: '/generate',
-            element: ProjectForm(),
+            element: <ProjectForm/>,
             isProtected: false,
             name: "New Project",
             icon: <FontAwesomeIcon icon={faMicrochip}/>
         },
         {
-            path: '/modify',
-            element: ProjectModification(),
+            path: '/modify/:id',
+            element: <ProjectModification/>,
             isProtected: false,
             name: "Modify Project",
             icon: <FontAwesomeIcon icon={faMicrochip}/>
         },
         {
-            path: '/overview',
-            element: OverView(),
+            path: '/overview/:id',
+            element: <OverView/>,
             isProtected: false,
             name: "Overview",
             icon: <FontAwesomeIcon icon={faMicrochip}/>

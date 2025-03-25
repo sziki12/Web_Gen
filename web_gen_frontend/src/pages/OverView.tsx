@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, {useState} from "react";
 import {
     Container,
     Typography,
@@ -32,11 +32,11 @@ const ProjectOverview = () => {
     });
 
     const handleChange = (e) => {
-        setProject({ ...project, [e.target.name]: e.target.value });
+        setProject({...project, [e.target.name]: e.target.value});
     };
 
     return (
-        <Container maxWidth="md" sx={{ mt: 4 }}>
+        <Container maxWidth="md" sx={{mt: 4}}>
             <Typography variant="h4" gutterBottom>
                 Project Overview
             </Typography>
@@ -51,7 +51,7 @@ const ProjectOverview = () => {
                                 name="name"
                                 value={project.name}
                                 onChange={handleChange}
-                                sx={{ mb: 2 }}
+                                sx={{mb: 2}}
                             />
                             <Typography>ID: {project.id}</Typography>
                             <Typography>Created At: {project.createdAt}</Typography>
@@ -63,7 +63,7 @@ const ProjectOverview = () => {
                                 value={project.status}
                                 onChange={handleChange}
                                 name="status"
-                                sx={{ mb: 2 }}
+                                sx={{mb: 2}}
                             >
                                 <MenuItem value="In Progress">In Progress</MenuItem>
                                 <MenuItem value="Completed">Completed</MenuItem>
@@ -73,25 +73,9 @@ const ProjectOverview = () => {
                             <Typography>Project Type: {project.projectType}</Typography>
                         </Grid>
                     </Grid>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h6">Generation Progress</Typography>
-                    <LinearProgress variant="determinate" value={project.progress} sx={{ my: 2 }} />
-                    <Typography>{project.progress}% Completed</Typography>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="h6">AI Generation Prompt</Typography>
-                    <TextField
-                        fullWidth
-                        multiline
-                        rows={3}
-                        name="prompt"
-                        value={project.prompt}
-                        onChange={handleChange}
-                        variant="outlined"
-                        sx={{ my: 2 }}
-                    />
-                    <Divider sx={{ my: 2 }} />
+                    <Divider sx={{my: 2}}/>
                     <Accordion>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
                             <Typography variant="h6">Logs & Errors</Typography>
                         </AccordionSummary>
                         <AccordionDetails>
@@ -102,8 +86,8 @@ const ProjectOverview = () => {
                             ))}
                         </AccordionDetails>
                     </Accordion>
-                    <Divider sx={{ my: 2 }} />
-                    <Button variant="contained" color="primary" sx={{ mr: 2 }}>
+                    <Divider sx={{my: 2}}/>
+                    <Button variant="contained" color="primary" sx={{mr: 2}}>
                         Save Changes
                     </Button>
                     <Button variant="outlined" color="secondary">
