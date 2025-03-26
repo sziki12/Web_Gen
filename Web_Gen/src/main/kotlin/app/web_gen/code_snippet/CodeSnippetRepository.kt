@@ -6,8 +6,8 @@ import org.springframework.data.repository.query.Param
 import java.util.*
 
 interface CodeSnippetRepository : JpaRepository<CodeSnippet, Long> {
-    @Query("SELECT * FROM code_snippets WHERE project_id = (SELECT project_id FROM projects WHERE name = :projectName) ORDER BY embedding <-> cast(:queryVector as vector)  LIMIT :limit", nativeQuery = true)
-    fun findRelevantSnippets(@Param("projectName") projectName:String, @Param("queryVector") queryVector: FloatArray, @Param("limit") limit: Int): List<CodeSnippet>
+    @Query("SELECT * FROM code_snippets WHERE project_id = :projectId ORDER BY embedding <-> cast(:queryVector as vector)  LIMIT :limit", nativeQuery = true)
+    fun findRelevantSnippets(@Param("projectId") projectId:Long, @Param("queryVector") queryVector: FloatArray, @Param("limit") limit: Int): List<CodeSnippet>
 
     fun findByProjectIdAndFilename(projectId: Long, filename: String): Optional<CodeSnippet>
     fun existsByProjectIdAndFilename(projectId: Long, filename: String): Boolean

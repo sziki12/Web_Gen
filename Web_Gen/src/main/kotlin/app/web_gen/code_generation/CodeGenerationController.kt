@@ -6,6 +6,7 @@ import app.web_gen.code_running.CodeRunnerService
 import app.web_gen.code_snippet.CodeSnippetRepository
 import app.web_gen.project.GeneratedProjectRepository
 import app.web_gen.project.ProjectPathResolver
+import app.web_gen.security.AuthService
 import app.web_gen.test_response.testGenerateResponse
 import app.web_gen.test_response.testModifyResponse
 import app.web_gen.zip.ZipDirectory
@@ -30,6 +31,7 @@ class CodeGenerationController(
     private val openAiService: OpenAiService,
     private val projectPathResolver: ProjectPathResolver,
     private val zipDirectory: ZipDirectory,
+    private val authService: AuthService,
 ) {
     private val gson: Gson = Gson().newBuilder().create()
 
@@ -37,21 +39,23 @@ class CodeGenerationController(
     var useTestResponses: Boolean = true
 
 
-    @PostMapping("/{projectName}/modify")
+    @PostMapping("/{projectId}/modify")
     fun modifyCode(
         @RequestParam query: String,
-        @PathVariable projectName: String
+        @PathVariable projectId: Long
     ): ResponseEntity<ProjectModificationResponse> {
 
         try {
+            val currentUserId = authService.getCurrentUser().id ?: -1
+            val project = projectRepository.findByIdAndUserId(projectId, currentUserId).get()
             val queryVector = openAiService.generateEmbedding(query)
-            val relevantSnippets = codeRepository.findRelevantSnippets(projectName, queryVector, 3)
+            val relevantSnippets = codeRepository.findRelevantSnippets(projectId, queryVector, 3)
             val modifiedCode = if (useTestResponses) {
                 gson.fromJson(testModifyResponse, ProjectModificationResponse::class.java)
             } else {
                 openAiService.modifyCode(query, relevantSnippets)
             }
-            codeGenerationService.updateProjectFiles(projectName, modifiedCode, relevantSnippets)
+            codeGenerationService.updateProjectFiles(project, modifiedCode, relevantSnippets)
             return ResponseEntity.ok(modifiedCode)
         } catch (e: Exception) {
             return ResponseEntity.notFound().build()
@@ -73,47 +77,52 @@ class CodeGenerationController(
 
     }
 
-    @GetMapping("/{projectName}/query")
+    @GetMapping("/{projectId}/query")
     fun findRelevantSnippets(
         @RequestParam query: String,
-        @PathVariable projectName: String
+        @PathVariable projectId: Long
     ): ResponseEntity<List<String>> {
         val transformedQuery = openAiService.generateEmbedding(query)
-        val relevantSnippets = codeRepository.findRelevantSnippets(projectName, transformedQuery, limit = 2)
+        val relevantSnippets = codeRepository.findRelevantSnippets(projectId, transformedQuery, limit = 2)
         return ResponseEntity.ok(relevantSnippets.map { it.filename })
     }
 
-    @PostMapping("/{projectName}/start")
-    fun startProject(@PathVariable projectName: String): ResponseEntity<String> {
+    @PostMapping("/{projectId}/start")
+    fun startProject(@PathVariable projectId: Long): ResponseEntity<String> {
         try {
-            projectRepository.findByName(projectName).get()
-            codeRunnerService.runApplication(projectName)
-            return ResponseEntity.ok(projectName)
+            val currentUserId = authService.getCurrentUser().id ?: -1
+            val project = projectRepository.findByIdAndUserId(projectId, currentUserId).get()
+            codeRunnerService.runApplication(project)
+            return ResponseEntity.ok(project.name)
         } catch (e: Exception) {
             return ResponseEntity.notFound().build()
         }
     }
 
-    @PostMapping("/{projectName}/terminate")
-    fun terminateProject(@PathVariable projectName: String): ResponseEntity<String> {
+    @PostMapping("/{projectId}/terminate")
+    fun terminateProject(@PathVariable projectId: Long): ResponseEntity<String> {
         try {
-            projectRepository.findByName(projectName).get()
-            codeRunnerService.terminateApplication(projectName)
-            return ResponseEntity.ok(projectName)
+            val currentUserId = authService.getCurrentUser().id ?: -1
+            val project = projectRepository.findByIdAndUserId(projectId, currentUserId).get()
+            codeRunnerService.terminateApplication(project)
+            return ResponseEntity.ok(project.name)
         } catch (e: Exception) {
             return ResponseEntity.notFound().build()
         }
     }
 
-    @GetMapping(value = ["{projectName}/zip"], produces = ["application/zip"])
-    fun downloadProject(@PathVariable projectName: String): ResponseEntity<ByteArray> {
+    @GetMapping(value = ["{projectId}/zip"], produces = ["application/zip"])
+    fun downloadProject(@PathVariable projectId: Long): ResponseEntity<ByteArray> {
+        val currentUserId = authService.getCurrentUser().id ?: -1
+        val project = projectRepository.findByIdAndUserId(projectId, currentUserId).get()
+
         val byteArrayOutputStream = ByteArrayOutputStream()
         val bufferedOutputStream = BufferedOutputStream(byteArrayOutputStream)
         val zipOutputStream = ZipOutputStream(bufferedOutputStream)
 
-        val file = File(projectPathResolver.getProjectPath(projectName))
+        val file = File(projectPathResolver.getProjectPath(project.name))
         println("path: ${file.absolutePath}")
-        zipDirectory.zip(file, projectName, zipOutputStream)
+        zipDirectory.zip(file, project.name, zipOutputStream)
 
         IOUtils.closeQuietly(bufferedOutputStream)
         IOUtils.closeQuietly(byteArrayOutputStream)
@@ -121,7 +130,6 @@ class CodeGenerationController(
             .ok()
             .header("Content-Disposition", "attachment; filename=\"files.zip\"")
             .body(byteArrayOutputStream.toByteArray())
-
 
         return response
     }

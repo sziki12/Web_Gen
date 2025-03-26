@@ -5,7 +5,7 @@ import org.springframework.stereotype.Repository
 import java.util.Optional
 
 @Repository
-interface GeneratedProjectRepository: JpaRepository<GeneratedProject, Long> {
+interface GeneratedProjectRepository : JpaRepository<GeneratedProject, Long> {
 
-    fun findByName(name: String):Optional<GeneratedProject>
+    fun findByIdAndUserId(id: Long, userId: Long): Optional<GeneratedProject>
 }

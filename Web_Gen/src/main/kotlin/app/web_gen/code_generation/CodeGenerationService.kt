@@ -10,6 +10,7 @@ import app.web_gen.code_snippet.CodeSnippetRepository
 import app.web_gen.project.GeneratedProject
 import app.web_gen.project.GeneratedProjectRepository
 import app.web_gen.project.ProjectPathResolver
+import app.web_gen.security.AuthService
 import groovy.json.StringEscapeUtils
 import okhttp3.internal.notifyAll
 import org.springframework.beans.factory.annotation.Value
@@ -23,21 +24,22 @@ import kotlin.io.path.pathString
 
 @Service
 class CodeGenerationService(
-        private val codeSnippetRepository: CodeSnippetRepository,
-        private val generatedProjectRepository: GeneratedProjectRepository,
-        private val openAiService: OpenAiService,
-        private val commandSubstitutionService: CommandSubstitutionService,
-        private val projectPathResolver: ProjectPathResolver,
+    private val codeSnippetRepository: CodeSnippetRepository,
+    private val generatedProjectRepository: GeneratedProjectRepository,
+    private val openAiService: OpenAiService,
+    private val commandSubstitutionService: CommandSubstitutionService,
+    private val projectPathResolver: ProjectPathResolver,
+    private val authService: AuthService,
 ) {
     fun applyChanges(
-            project: GeneratedProject,
-            oldSnippet: CodeSnippet,
-            unescapedReplacedCode: String,
-            newCode: String
+        project: GeneratedProject,
+        oldSnippet: CodeSnippet,
+        unescapedReplacedCode: String,
+        newCode: String
     ) {
         val path = Path(projectPathResolver.getUserFolderPath(), oldSnippet.relativePath)
         val escapedReplacedCode = StringEscapeUtils.unescapeJava(unescapedReplacedCode)
-generatedProjectRepository
+        generatedProjectRepository
         var updatedContent = oldSnippet.content.replace(escapedReplacedCode, newCode)
         //If replace fails, replace the whole file
         if (updatedContent == oldSnippet.content) {
@@ -57,16 +59,17 @@ generatedProjectRepository
     fun generateProjectFiles(projectName: String, creationResponse: ProjectCreationResponse) {
 
         var project = GeneratedProject(
-                name = projectName,
-                codeToGenerateFiles = creationResponse.codeToGenerateFiles,
-                codeToInstallPackages = creationResponse.codeToInstallPackages,
-                codeToRun = creationResponse.codeToRun
+            name = projectName,
+            codeToGenerateFiles = creationResponse.codeToGenerateFiles,
+            codeToInstallPackages = creationResponse.codeToInstallPackages,
+            codeToRun = creationResponse.codeToRun,
+            user = authService.getCurrentUser()
         )
         println(
-                "${project.name}\n---\n" +
-                        "codeToGenerateFiles\n${project.codeToGenerateFiles}\n---\n" +
-                        "codeToInstallPackages\n${project.codeToInstallPackages}\n---\n" +
-                        "codeToRun\n${project.codeToRun}"
+            "${project.name}\n---\n" +
+                    "codeToGenerateFiles\n${project.codeToGenerateFiles}\n---\n" +
+                    "codeToInstallPackages\n${project.codeToInstallPackages}\n---\n" +
+                    "codeToRun\n${project.codeToRun}"
         )
         project = generatedProjectRepository.save(project)
 
@@ -74,17 +77,17 @@ generatedProjectRepository
         println("Generating files")
         println(creationResponse.codeToGenerateFiles)
         runGenerationCommand(
-                projectPathResolver.getUserFolderPath(),
-                creationResponse.codeToGenerateFiles,
-                true
+            projectPathResolver.getUserFolderPath(),
+            creationResponse.codeToGenerateFiles,
+            true
         )
 
         println("Installing packages")
         println(creationResponse.codeToInstallPackages)
         runGenerationCommand(
-                projectPathResolver.getProjectPath(projectName),
-                creationResponse.codeToInstallPackages,
-                false
+            projectPathResolver.getProjectPath(projectName),
+            creationResponse.codeToInstallPackages,
+            false
         )
 
         println("Completed")
@@ -93,12 +96,10 @@ generatedProjectRepository
     }
 
     fun updateProjectFiles(
-            projectName: String,
-            modificationResponse: ProjectModificationResponse,
-            relevantSnippets: List<CodeSnippet>
+        project: GeneratedProject,
+        modificationResponse: ProjectModificationResponse,
+        relevantSnippets: List<CodeSnippet>
     ) {
-        //Find project
-        val project = generatedProjectRepository.findByName(projectName).get()
         //Modify existing files
         modificationResponse.modifiedFiles.forEach { modifiedFile ->
             val snippet = relevantSnippets.find { it.relativePath == modifiedFile.path }
@@ -116,16 +117,16 @@ generatedProjectRepository
         if (files.existingFiles.isNotEmpty()) {
             val oldFiles = project.id?.let { id ->
                 codeSnippetRepository.findByProjectIdAndRelativePathIn(
-                        id,
-                        files.existingFiles.map { file -> file.path })
+                    id,
+                    files.existingFiles.map { file -> file.path })
             } ?: mutableListOf()
             val conflictRequest = FileConflictResolverRequest(
-                    oldFiles.map { FileContent(it.relativePath, it.content) }.toMutableList(),
-                    files.existingFiles
+                oldFiles.map { FileContent(it.relativePath, it.content) }.toMutableList(),
+                files.existingFiles
             )
             println("conflictRequest:\n$conflictRequest\n\n")
             val conflictResolveResponse =
-                    openAiService.resolveFileConflict(modificationResponse.textResponse, conflictRequest)
+                openAiService.resolveFileConflict(modificationResponse.textResponse, conflictRequest)
             println("conflictResolveResponse:\n$conflictResolveResponse\n\n")
             //TODO Check the file.path, it doesn't contains the projectName
             conflictResolveResponse.modifiedFiles.forEach { file ->
@@ -139,9 +140,9 @@ generatedProjectRepository
         }
         try {
             runGenerationCommand(
-                    projectPathResolver.getProjectPath(projectName),
-                    modificationResponse.codeToGenerate,
-                    false
+                projectPathResolver.getProjectPath(project.name),
+                modificationResponse.codeToGenerate,
+                false
             )
         } catch (e: Exception) {
             println("FAILED  to run GENERATION Command:\n${modificationResponse.codeToGenerate}\n${e.message}")
@@ -157,20 +158,20 @@ generatedProjectRepository
         commands = commandSubstitutionService.substituteCommands(commands)
         println(commands)
         val codeGeneration = ProcessBuilder()
-                .command(commands)
-                .directory(File(projectPath)).inheritIO()
+            .command(commands)
+            .directory(File(projectPath)).inheritIO()
         codeGeneration.start().waitFor()
     }
 
     private fun separateNewAndExistingFiles(
-            project: GeneratedProject,
-            modificationResponse: ProjectModificationResponse
+        project: GeneratedProject,
+        modificationResponse: ProjectModificationResponse
     ): NewAndExistingFiles {
         val out = NewAndExistingFiles()
         for (potentialNewFile in modificationResponse.newFiles) {
             val isFileExists =
-                    project.id?.let { codeSnippetRepository.existsByProjectIdAndFilename(it, potentialNewFile.path) }
-                            ?: throw NullPointerException("Project with name: ${project.name} is not saved yet")
+                project.id?.let { codeSnippetRepository.existsByProjectIdAndFilename(it, potentialNewFile.path) }
+                    ?: throw NullPointerException("Project with name: ${project.name} is not saved yet")
             if (isFileExists) {
                 out.existingFiles.add(potentialNewFile)
             } else {
@@ -189,10 +190,10 @@ generatedProjectRepository
             val file = File(Path(userFolderPath, newFile.path).toString())
             val parent = File(file.parent)
             val codeSnippet = CodeSnippet(
-                    file.name,
-                    newFile.path,
-                    newFile.content,
-                    openAiService.generateEmbedding(file.name, newFile.content),
+                file.name,
+                newFile.path,
+                newFile.content,
+                openAiService.generateEmbedding(file.name, newFile.content),
             ).also {
                 it.project = project
             }

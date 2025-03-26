@@ -4,7 +4,6 @@ import './index.css';
 import reportWebVitals from './reportWebVitals';
 import AuthState from "./states/AuthState";
 import RouteNavigator from "./routes/RouteNavigator";
-import {faHouse} from "@fortawesome/free-solid-svg-icons";
 
 
 const root = ReactDOM.createRoot(

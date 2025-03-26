@@ -12,4 +12,4 @@ data class Overview(
     var techStack: String,
     var projectType: String,
     //TODO Logs if the application is started, Websocket?
-    )
+)

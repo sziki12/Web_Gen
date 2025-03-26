@@ -22,10 +22,11 @@ data class CodeSnippet(
 ) {
 
     @ManyToOne
-    @JoinColumn(name="project_id")
-    lateinit var project:GeneratedProject
+    @JoinColumn(name = "project_id")
+    lateinit var project: GeneratedProject
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "code_snippet_id")
     val id: Long? = null
     override fun equals(other: Any?): Boolean {
