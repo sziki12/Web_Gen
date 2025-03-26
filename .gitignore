@@ -28,3 +28,4 @@ replay_pid*
 /Web_Gen/src/main/resources/generated
 Web_Gen/src/main/resources/substitutableCommands.txt
 /.idea
+/web_gen_frontend/.idea
