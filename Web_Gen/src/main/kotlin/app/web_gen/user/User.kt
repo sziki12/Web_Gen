@@ -13,6 +13,6 @@ data class User(
     @Column(name = "user_id")
     val id: Long? = null
 
-    @OneToMany
+    @OneToMany(mappedBy = "user")
     var projects: MutableList<GeneratedProject> = mutableListOf()
 }

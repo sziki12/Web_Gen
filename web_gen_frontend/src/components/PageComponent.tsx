@@ -1,13 +1,16 @@
 import React from "react";
 import MainAppBar from "../components/MainAppBar"
 import AuthState from "../states/AuthState"
+import ProjectService from "../service/ProjectService";
 
 export default function PageComponent({children}){
 
     return <>
         <AuthState>
-            <MainAppBar/>
-            {children}
+            <ProjectService>
+                <MainAppBar/>
+                {children}
+            </ProjectService>
         </AuthState>
     </>
 }

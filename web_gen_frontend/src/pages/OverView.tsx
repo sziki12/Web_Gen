@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {
     Container,
     Typography,
@@ -16,6 +16,9 @@ import {
     AccordionDetails,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {DashboardResponse, OverviewResponse} from "../types/types";
+import {nullOverview, ProjectServices} from "../service/ProjectService";
+import {useParams} from "react-router-dom";
 
 const ProjectOverview = () => {
     const [project, setProject] = useState({
@@ -31,9 +34,23 @@ const ProjectOverview = () => {
         logs: ["Initialized project", "Generated backend structure", "Generated frontend UI"],
     });
 
+    const params = useParams()
+
     const handleChange = (e) => {
         setProject({...project, [e.target.name]: e.target.value});
     };
+    const projectService = ProjectServices()
+    const [content, setContent] = useState<OverviewResponse>(nullOverview)
+    useEffect(() => {
+        projectService.getOverview((params.id ?? -1) as number).then((data) => {
+            setContent({
+                ...data,
+                creation: new Date(data.creation),
+                lastModification: new Date(data.lastModification),
+            })
+            console.log(data)
+        })
+    }, [])
 
     return (
         <Container maxWidth="md" sx={{mt: 4}}>
@@ -49,13 +66,13 @@ const ProjectOverview = () => {
                                 label="Project Name"
                                 variant="outlined"
                                 name="name"
-                                value={project.name}
+                                value={content.projectName}
                                 onChange={handleChange}
                                 sx={{mb: 2}}
                             />
-                            <Typography>ID: {project.id}</Typography>
-                            <Typography>Created At: {project.createdAt}</Typography>
-                            <Typography>Last Modified: {project.lastModified}</Typography>
+                            <Typography>ID: {content.id}</Typography>
+                            <Typography>Created At: {content.creation.toTimeString()}</Typography>
+                            <Typography>Last Modified: {content.lastModification.toTimeString()}</Typography>
                         </Grid>
                         <Grid item xs={12} md={6}>
                             <Select
@@ -69,26 +86,60 @@ const ProjectOverview = () => {
                                 <MenuItem value="Completed">Completed</MenuItem>
                                 <MenuItem value="Failed">Failed</MenuItem>
                             </Select>
-                            <Typography>Technology Stack: {project.techStack}</Typography>
-                            <Typography>Project Type: {project.projectType}</Typography>
+                            <Typography>Technology Stack: {content.techStack}</Typography>
+                            <Typography>Project Type: {content.projectType}</Typography>
                         </Grid>
                     </Grid>
+                    {
+                        content.projectStatus === "Started"
+                        ?
+                            <>
+                                <Divider sx={{my: 2}}/>
+                                <Accordion>
+                                    <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
+                                        <Typography variant="h6">Logs & Errors</Typography>
+                                    </AccordionSummary>
+                                    <AccordionDetails>
+                                        {project.logs.map((log, index) => (
+                                            <Typography key={index} variant="body2">
+                                                {log}
+                                            </Typography>
+                                        ))}
+                                    </AccordionDetails>
+                                </Accordion>
+                            </>
+                        :
+                        <></>
+                    }
                     <Divider sx={{my: 2}}/>
-                    <Accordion>
-                        <AccordionSummary expandIcon={<ExpandMoreIcon/>}>
-                            <Typography variant="h6">Logs & Errors</Typography>
-                        </AccordionSummary>
-                        <AccordionDetails>
-                            {project.logs.map((log, index) => (
-                                <Typography key={index} variant="body2">
-                                    {log}
-                                </Typography>
-                            ))}
-                        </AccordionDetails>
-                    </Accordion>
+                    {
+                        content.projectStatus === "Stopped"
+                        ?
+                            <>
+                                <Button variant="contained" color="primary" sx={{mr: 2}}>
+                                    Start Application
+                                </Button>
+                            </>
+                        :
+                            <></>
+                    }
+                    {
+                        content.projectStatus === "Started"
+                            ?
+                            <>
+                                <Button variant="contained" color="primary" sx={{mr: 2}}>
+                                    Stop Application
+                                </Button>
+                            </>
+                            :
+                            <></>
+                    }
                     <Divider sx={{my: 2}}/>
                     <Button variant="contained" color="primary" sx={{mr: 2}}>
                         Save Changes
+                    </Button>
+                    <Button variant="contained" color="primary" sx={{mr: 2}}>
+                        Revert Changes
                     </Button>
                     <Button variant="outlined" color="secondary">
                         Delete Project

@@ -63,7 +63,8 @@ class CodeGenerationService(
             codeToGenerateFiles = creationResponse.codeToGenerateFiles,
             codeToInstallPackages = creationResponse.codeToInstallPackages,
             codeToRun = creationResponse.codeToRun,
-            user = authService.getCurrentUser()
+            user = authService.getCurrentUser(),
+            projectType = "" //TODO("Project type in model")
         )
         println(
             "${project.name}\n---\n" +
