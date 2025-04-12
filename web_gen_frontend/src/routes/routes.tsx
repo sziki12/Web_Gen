@@ -1,7 +1,7 @@
 import {ComplexRoute, MenuItemRoute} from "../types/types"
 import LiveView from "../pages/LiveView";
 import Dashboard from "../pages/Dashboard";
-import ProjectForm from "../pages/ProjectForm";
+import GenerateNewProject from "../pages/GenerateNewProject";
 import {faHouse, faMicrochip, faTableColumns, faTriangleExclamation} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import React from "react";
@@ -28,7 +28,7 @@ export default function AppRoutes() {
         },
         {
             path: '/generate',
-            element: <ProjectForm/>,
+            element: <GenerateNewProject/>,
             isProtected: false,
             name: "New Project",
             icon: <FontAwesomeIcon icon={faMicrochip}/>

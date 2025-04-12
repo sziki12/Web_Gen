@@ -14,7 +14,7 @@ const rows = [
 
 const columns = [
     {field: "id", headerName: "ID", width: 70},
-    {field: "name", headerName: "Project Name", flex: 1},
+    {field: "projectName", headerName: "Project Name", flex: 1},
     {field: "status", headerName: "Status", flex: 1},
 ];
 
@@ -46,16 +46,8 @@ const Dashboard = () => {
                 <Grid>
                     <Card>
                         <CardContent>
-                            <Typography variant="h6">Active Projects</Typography>
-                            <Typography variant="h4">1</Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="h6">Completed Projects</Typography>
-                            <Typography variant="h4">1</Typography>
+                            <Typography variant="h6">Running Projects</Typography>
+                            <Typography variant="h4">{content.projects.filter((project)=>{return project.status.toUpperCase() === "STARTED"}).length}</Typography>
                         </CardContent>
                     </Card>
                 </Grid>

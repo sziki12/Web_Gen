@@ -2,7 +2,7 @@ import React from 'react';
 import logo from '../logo.svg';
 import '../App.css';
 import Iframe from 'react-iframe'
-import ProjectForm from "./ProjectForm";
+import GenerateNewProject from "./GenerateNewProject";
 import PageComponent from "../components/PageComponent";
 import ProjectModification from "./ProjectModification";
 

@@ -17,6 +17,6 @@ data class DashboardItem(
 
 fun Collection<GeneratedProject>.getDashboard(): Dashboard {
     return Dashboard(this.map {
-        DashboardItem(it.id!!, it.name, ProjectStatus.Generating)
+        DashboardItem(it.id!!, it.name, it.status)
     }.toMutableList())
 }

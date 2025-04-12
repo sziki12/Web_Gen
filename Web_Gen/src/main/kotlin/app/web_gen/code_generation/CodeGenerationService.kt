@@ -1,5 +1,6 @@
 package app.web_gen.code_generation
 
+import app.web_gen.code_generation.enumeration.ProjectStatus
 import app.web_gen.code_generation.request.FileConflictResolverRequest
 import app.web_gen.code_generation.response.FileContent
 import app.web_gen.code_generation.response.NewAndExistingFiles
@@ -94,6 +95,7 @@ class CodeGenerationService(
         println("Completed")
 
         generateFiles(project, creationResponse.newFiles)
+        generatedProjectRepository.save(project.also { it.status = ProjectStatus.Stopped })
     }
 
     fun updateProjectFiles(
@@ -152,7 +154,7 @@ class CodeGenerationService(
 
     private fun runGenerationCommand(projectPath: String, codeToGenerate: String, requiresCmd: Boolean) {
         var commands = if (requiresCmd)
-            listOf("cmd", "/C", *codeToGenerate.split(" ").toTypedArray())
+            listOf("cmd", "/C","npm","install", *codeToGenerate.split(" ").toTypedArray())
         else
             codeToGenerate.split(" ")
 

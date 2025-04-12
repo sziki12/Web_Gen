@@ -23,6 +23,7 @@ import java.util.zip.ZipOutputStream
 
 @RestController
 @RequestMapping("/api/code")
+@CrossOrigin
 class CodeGenerationController(
     private val codeRepository: CodeSnippetRepository,
     private val projectRepository: GeneratedProjectRepository,
@@ -67,6 +68,8 @@ class CodeGenerationController(
         @RequestParam prompt: String,
         @PathVariable projectName: String
     ): ResponseEntity<ProjectCreationResponse> {
+
+        println("Prompt:\n${prompt}")
         val generatedCode = if (useTestResponses) {
             gson.fromJson(testGenerateResponse, ProjectCreationResponse::class.java)
         } else {

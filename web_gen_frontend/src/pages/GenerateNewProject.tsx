@@ -9,27 +9,39 @@ import {
     Container, LinearProgress
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
+import {ProjectServices} from "../service/ProjectService";
 
-export default function ProjectForm() {
+export default function GenerateNewProject() {
+    const projectService = ProjectServices()
     const [response, setResponse] = useState("")
     const [project, setProject] = useState({
-        projectName: String,
-        generationPrompt: String,
-        techStack: String,
+        projectName: "",
+        generationPrompt: "",
+        techStack: "",
         progress: 0,
         complexity: 50,
     })
     const handleSubmit = () => {
         console.log({...project})
-        setTimeout(() => {
-            setResponse("Request Submitted")
-            for (let i = 0; i < 10; i++) {
-                setTimeout(()=>{
-                    setProject({...project,
-                    progress:10+i*10})
-                },500*i)
+        projectService.generateProject(project.projectName, project.generationPrompt+"; Tech Stack: "+project.techStack).then(responseCode => {
+                if (responseCode === 200) {
+                    setTimeout(() => {
+                        setResponse("Request Submitted")
+                        for (let i = 0; i < 10; i++) {
+                            setTimeout(() => {
+                                setProject({
+                                    ...project,
+                                    progress: 10 + i * 10
+                                })
+                            }, 500 * i)
+                        }
+                    }, 500)
+                } else {
+                    console.log("Error, response code: "+responseCode)
+                }
             }
-        }, 500)
+        )
+
 
         // TODO Call API to generate the project
     };

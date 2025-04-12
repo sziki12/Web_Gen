@@ -4,7 +4,6 @@ import {
     Typography,
     Card,
     CardContent,
-    Grid,
     TextField,
     Select,
     MenuItem,
@@ -15,6 +14,7 @@ import {
     AccordionSummary,
     AccordionDetails,
 } from "@mui/material";
+import Grid from '@mui/material/Grid2';
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {DashboardResponse, OverviewResponse} from "../types/types";
 import {nullOverview, ProjectServices} from "../service/ProjectService";
@@ -41,7 +41,8 @@ const ProjectOverview = () => {
     };
     const projectService = ProjectServices()
     const [content, setContent] = useState<OverviewResponse>(nullOverview)
-    useEffect(() => {
+
+    const updateOverview = ()=>{
         projectService.getOverview((params.id ?? -1) as number).then((data) => {
             setContent({
                 ...data,
@@ -50,7 +51,9 @@ const ProjectOverview = () => {
             })
             console.log(data)
         })
-    }, [])
+    }
+
+    useEffect(updateOverview, [])
 
     return (
         <Container maxWidth="md" sx={{mt: 4}}>
@@ -60,7 +63,7 @@ const ProjectOverview = () => {
             <Card>
                 <CardContent>
                     <Grid container spacing={3}>
-                        <Grid item xs={12} md={6}>
+                        <Grid>
                             <TextField
                                 fullWidth
                                 label="Project Name"
@@ -74,18 +77,8 @@ const ProjectOverview = () => {
                             <Typography>Created At: {content.creation.toTimeString()}</Typography>
                             <Typography>Last Modified: {content.lastModification.toTimeString()}</Typography>
                         </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Select
-                                fullWidth
-                                value={project.status}
-                                onChange={handleChange}
-                                name="status"
-                                sx={{mb: 2}}
-                            >
-                                <MenuItem value="In Progress">In Progress</MenuItem>
-                                <MenuItem value="Completed">Completed</MenuItem>
-                                <MenuItem value="Failed">Failed</MenuItem>
-                            </Select>
+                        <Grid>
+                            <Typography>Status: {content.projectStatus}</Typography>
                             <Typography>Technology Stack: {content.techStack}</Typography>
                             <Typography>Project Type: {content.projectType}</Typography>
                         </Grid>
@@ -116,7 +109,9 @@ const ProjectOverview = () => {
                         content.projectStatus === "Stopped"
                         ?
                             <>
-                                <Button variant="contained" color="primary" sx={{mr: 2}}>
+                                <Button variant="contained" color="primary" sx={{mr: 2}} onClick={()=>{
+                                    projectService.startApplication(content.id).then(()=>{updateOverview()})
+                                }}>
                                     Start Application
                                 </Button>
                             </>
@@ -127,7 +122,9 @@ const ProjectOverview = () => {
                         content.projectStatus === "Started"
                             ?
                             <>
-                                <Button variant="contained" color="primary" sx={{mr: 2}}>
+                                <Button variant="contained" color="primary" sx={{mr: 2}} onClick={()=>{
+                                    projectService.terminateApplication(content.id).then(()=>{updateOverview()})
+                                }}>
                                     Stop Application
                                 </Button>
                             </>

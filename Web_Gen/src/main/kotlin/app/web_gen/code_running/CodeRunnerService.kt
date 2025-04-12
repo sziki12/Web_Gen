@@ -23,8 +23,10 @@ class CodeRunnerService(
         val projectPath = projectPathResolver.getProjectPath(project.name)
         println(projectPath)
         //Run App
-        println("Starting")
-
+        println("${project.id} Starting")
+        generatedProjectRepository.save(project.also {
+            it.status = ProjectStatus.Starting
+        })
         var runCommands = project.codeToRun.split(" ")
         runCommands = commandSubstitutionService.substituteCommands(runCommands)
 
@@ -41,14 +43,23 @@ class CodeRunnerService(
                 it.status = ProjectStatus.Started
             })
         }
+
+        //TODO runnable.waitfor if should run start query with output to resolve
+        //Error status
+        //Automatic or manual fix
     }
 
     fun terminateApplication(project: GeneratedProject) {
+        generatedProjectRepository.save(project.also {
+            it.status = ProjectStatus.Stopping
+        })
+        println("${project.id} Stopping")
         val process = runningProcesses[project.id]
         process?.let { parent ->
             parent.descendants().forEach { descendant -> descendant.destroy() }
             parent.destroy()
-            println("Destroyed")
+            println("${project.id} Stopped")
+
             generatedProjectRepository.save(project.also {
                 it.status = ProjectStatus.Stopped
             })
