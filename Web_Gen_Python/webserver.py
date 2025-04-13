@@ -1,5 +1,6 @@
 # Python 3 server example
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from dotenv import load_dotenv
 import json
 from types import SimpleNamespace
 from langchain_scripts.generation_flow import GenerationFlow
@@ -33,7 +34,8 @@ class MyServer(BaseHTTPRequestHandler):
         params = json.loads(request_body, object_hook=lambda d: SimpleNamespace(**d))
         return params  
 
-if __name__ == "__main__":        
+if __name__ == "__main__": 
+    load_dotenv("environment_variables.env")       
     webServer = HTTPServer((hostName, serverPort), MyServer)
     print("Server started http://%s:%s" % (hostName, serverPort))
 

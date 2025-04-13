@@ -30,3 +30,4 @@ Web_Gen/src/main/resources/substitutableCommands.txt
 /.idea
 /web_gen_frontend/.idea
 *.pyc
+*.env
