@@ -7,7 +7,6 @@ from langchain_scripts.generation_flow import GenerationFlow
 
 hostName = "localhost"
 serverPort = 9000
-flow = GenerationFlow()
 class MyServer(BaseHTTPRequestHandler):
     
     def do_GET(self):
@@ -20,12 +19,16 @@ class MyServer(BaseHTTPRequestHandler):
     def do_POST(self):
         params = self.load_params()
 
-        
-        output = flow.call(params.message,params.thread_id)
+        output = flow.call(params.project_name, params.prompt,params.thread_id)
+        formated_output = {
+            "response":output.content,
+            "data":output.additional_kwargs
+        }
+        print(json.dumps(formated_output))
         self.send_response(200)
-        self.send_header('Content-type','text/html')
+        self.send_header('Content-type','application/json')
         self.end_headers()
-        self.wfile.write(bytes(output, "utf8"))   
+        self.wfile.write(bytes(json.dumps(formated_output), "utf8"))  
 
 
     def load_params(self):
@@ -36,6 +39,7 @@ class MyServer(BaseHTTPRequestHandler):
 
 if __name__ == "__main__": 
     load_dotenv("environment_variables.env")       
+    flow = GenerationFlow()
     webServer = HTTPServer((hostName, serverPort), MyServer)
     print("Server started http://%s:%s" % (hostName, serverPort))
 
