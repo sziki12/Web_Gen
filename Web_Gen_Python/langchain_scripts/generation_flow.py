@@ -1,6 +1,6 @@
 from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import START, MessagesState, StateGraph
+from langgraph.graph import START, END, MessagesState, StateGraph
 from langchain_scripts.model_provider import ModelProvider
 
 class  GenerationFlow:
@@ -9,9 +9,17 @@ class  GenerationFlow:
         self.compile()
 
 
-    def improve(self,user_prompt:str):
-        prompt = "Extend the given prompt with probable features, pages, design ideas and other nescessarry detailes to generate a complex web application.\n{user_prompt}".format(user_prompt)
+    def improve(self,state: MessagesState):
+        print("\nImprove  MessageState", state)
+        prompt = "Extend the given prompt with probable features, pages, design ideas and other nescessarry detailes to generate a complex web application.\n{user_prompt}".format(user_prompt=state["messages"])
         output = self.model.invoke(prompt)   
+        return {"messages": output["messages"]}
+    
+    def generate(self,state: MessagesState):
+        print("\nGenerate  MessageState", state)
+        response = self.model.invoke_generation({"messages": state["messages"]})
+        output = {"messages" : response["messages"]}
+        return output
     
     def compile(self):
         # Define a new graph
@@ -19,12 +27,13 @@ class  GenerationFlow:
         # Define the (single) node in the graph
         workflow.add_edge(START, "improve")
         workflow.add_edge("improve", "model")
+        workflow.add_edge("model", END)
         workflow.add_node("improve", self.improve)
-        workflow.add_node("model", self.model.invoke_generation)
+        workflow.add_node("model", self.generate)
 
         # Add memory
         self.memory = MemorySaver()
-        self.app = workflow.compile(checkpointer=self.memory)
+        self.app = workflow.compile(checkpointer=self.memory)    
     
     def call(self,project_name:str, input_messages: str, thread_id: str):
         base_prompt = "You are a developer. Create or modify an application based on given input."

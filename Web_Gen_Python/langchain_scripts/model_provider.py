@@ -8,7 +8,7 @@ class ModelProvider:
       self.model = init_chat_model("gpt-4o-mini", model_provider="openai")
 
     def invoke(self, state: MessagesState) -> dict:
-      response = self.model.invoke(state["messages"])   
+      response = self.model.invoke(state)
       return {"messages": response}
     
     def invoke_generation(self, state: MessagesState) -> dict:
