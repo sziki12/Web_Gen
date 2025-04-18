@@ -13,7 +13,7 @@ generation_request_schema = {
     },
     "codeToGenerateFiles": {
       "type": "string",
-      "description":"Code to generate the missing project files. Consider the Root folder the current directory and existing. Only contains runnable code for cmd."
+      "description":"Code to generate the missing project files. If you can use creation scripts like npx. Consider the Root folder the current directory and existing. Only contains runnable code for cmd."
     },
     "codeToInstallPackages": {
       "type": "string",
@@ -25,6 +25,7 @@ generation_request_schema = {
     },
     "newFiles": {
       "type": "array",
+      "description":"List of new files to be created to make a functional project based  on the input.",
       "items": {
         "type": "object",
         "properties": {

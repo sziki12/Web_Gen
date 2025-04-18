@@ -9,16 +9,16 @@ class ModelProvider:
 
     def invoke(self, state: MessagesState) -> dict:
       response = self.model.invoke(state)
-      return {"messages": response}
+      return {"messages": [response]}
     
     def invoke_generation(self, state: MessagesState) -> dict:
       self.structured_model = self.model.with_structured_output(generation_request_schema)
       response = self.structured_model.invoke(state["messages"])
-      return {"messages": response}
+      return {"messages": [response]}
     
     def invoke_modification(self, state: MessagesState) -> dict:
       self.structured_model = self.model.with_structured_output(modification_request_schema)
       response = self.structured_model.invoke(state["messages"]) 
-      return {"messages": response}
+      return {"messages": [response]}
     
     

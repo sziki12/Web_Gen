@@ -21,9 +21,14 @@ class MyServer(BaseHTTPRequestHandler):
 
         output = flow.call(params.project_name, params.prompt,params.thread_id)
         print("\nResponse  MessageState", output)
+        response = output["messages"][-1]
         formated_output = {
-            "response":output.content,
-            "data":output.additional_kwargs,
+            "response":response["content"],
+            "improve_prompt":output["improve_prompt"][-1].content,
+            "codeToGenerateFiles":response["codeToGenerateFiles"],
+            "codeToInstallPackages":response["codeToInstallPackages"],
+            "codeToRun":response["codeToRun"],
+            "newFiles":response["newFiles"],
         }
         print(json.dumps(formated_output))
         self.send_response(200)
