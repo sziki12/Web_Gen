@@ -49,8 +49,8 @@ class  GenerationFlow:
                 projectName=state["project_name"],
                 query=state["improve_prompt"])
         print("\nGenerate  MessageState", state)
-        state["messages"].append(HumanMessage(user_prompt))
         state["messages"].append(HumanMessage("Please focus on providing the created files as newFiles."))
+        state["messages"].append(HumanMessage(user_prompt))
         response = self.model.invoke_generation({"messages": state["messages"]})
         return {"messages" : response["messages"]}
     

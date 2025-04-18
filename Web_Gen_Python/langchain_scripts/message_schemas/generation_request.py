@@ -13,24 +13,28 @@ generation_request_schema = {
     },
     "codeToGenerateFiles": {
       "type": "string",
-      "description":"Code to generate the missing project files. If you can use creation scripts like npx. Consider the Root folder the current directory and existing. Only contains runnable code for cmd."
+      "description":"Runnable terminal code to generate required project files. Prefer using scaffolding tools (e.g., npx). Assumes the current directory is the root project folder."
     },
     "codeToInstallPackages": {
       "type": "string",
-      "description":"Code to install the missing npm packages. It is launched from the project folder. Only contains runnable code for cmd."
+      "description":"Runnable terminal code to install required dependencies (e.g., npm/yarn/pnpm). Assumes execution from the project root."
     },
     "codeToRun": {
       "type": "string",
-      "description":"Code to run the application. The current directory is the project's directory. Only contains runnable code for cmd."
+      "description":"Runnable terminal code to start the application (e.g., dev server, build step). Executed from the project root."
     },
     "newFiles": {
       "type": "array",
-      "description":"List of new files to be created to make a functional project based  on the input.",
+      "description":"List of new files to create in the project for it to be functional.",
       "items": {
         "type": "object",
         "properties": {
-          "path": { "type": "string" },
-          "content": { "type": "string" }
+          "path": { 
+              "type": "string",
+              "description": "Relative path to the new file from the root directory." },
+          "content": { 
+              "type": "string",
+              "description": "Full content of the file to be created."  }
         },
         "required": ["path", "content"],
         "additionalProperties": False
