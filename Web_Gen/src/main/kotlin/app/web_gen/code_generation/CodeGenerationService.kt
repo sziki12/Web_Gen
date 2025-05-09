@@ -40,7 +40,7 @@ class CodeGenerationService(
     ) {
         val path = Path(projectPathResolver.getUserFolderPath(), oldSnippet.relativePath)
         val escapedReplacedCode = StringEscapeUtils.unescapeJava(unescapedReplacedCode)
-        generatedProjectRepository
+
         var updatedContent = oldSnippet.content.replace(escapedReplacedCode, newCode)
         //If replace fails, replace the whole file
         if (updatedContent == oldSnippet.content) {
@@ -68,7 +68,7 @@ class CodeGenerationService(
             projectType = "" //TODO("Project type in model")
         )
         println(
-            "${project.name}\n---\n" +
+            "${project.rootFolderName()}\n---\n" +
                     "codeToGenerateFiles\n${project.codeToGenerateFiles}\n---\n" +
                     "codeToInstallPackages\n${project.codeToInstallPackages}\n---\n" +
                     "codeToRun\n${project.codeToRun}"
@@ -87,7 +87,7 @@ class CodeGenerationService(
         println("Installing packages")
         println(creationResponse.codeToInstallPackages)
         runGenerationCommand(
-            projectPathResolver.getProjectPath(projectName),
+            projectPathResolver.getProjectPath(project.rootFolderName()),
             creationResponse.codeToInstallPackages,
             false
         )
@@ -143,7 +143,7 @@ class CodeGenerationService(
         }
         try {
             runGenerationCommand(
-                projectPathResolver.getProjectPath(project.name),
+                projectPathResolver.getProjectPath(project.rootFolderName()),
                 modificationResponse.codeToGenerate,
                 false
             )
@@ -154,16 +154,27 @@ class CodeGenerationService(
 
     private fun runGenerationCommand(projectPath: String, codeToGenerate: String, requiresCmd: Boolean) {
         var commands = if (requiresCmd)
-            listOf("cmd", "/C","npm","install", *codeToGenerate.split(" ").toTypedArray())
+        {
+            listOf("cmd", "/C", *codeToGenerate.split(" ").toTypedArray())
+        }
         else
             codeToGenerate.split(" ")
+
+        val rootFile = File(projectPath)
+
+        rootFile.mkdir()
 
         commands = commandSubstitutionService.substituteCommands(commands)
         println(commands)
         val codeGeneration = ProcessBuilder()
             .command(commands)
-            .directory(File(projectPath)).inheritIO()
+            .directory(rootFile).inheritIO()
         codeGeneration.start().waitFor()
+
+        /*val npmInstall = ProcessBuilder()
+            .command(listOf("cmd", "/C","npm","install"))
+            .directory(File(projectPath)).inheritIO()
+        npmInstall.start().waitFor()*/
     }
 
     private fun separateNewAndExistingFiles(
@@ -174,7 +185,7 @@ class CodeGenerationService(
         for (potentialNewFile in modificationResponse.newFiles) {
             val isFileExists =
                 project.id?.let { codeSnippetRepository.existsByProjectIdAndFilename(it, potentialNewFile.path) }
-                    ?: throw NullPointerException("Project with name: ${project.name} is not saved yet")
+                    ?: throw NullPointerException("Project with name: ${project.rootFolderName()} is not saved yet")
             if (isFileExists) {
                 out.existingFiles.add(potentialNewFile)
             } else {
@@ -189,14 +200,17 @@ class CodeGenerationService(
         var writer: PrintWriter
         val createdSnippets = mutableListOf<CodeSnippet>()
         for (newFile in newFiles) {
-
+            if(newFile.path.startsWith(project.user.name))
+            {
+                newFile.path = newFile.path.removePrefix("${project.user.name}/")
+            }
             val file = File(Path(userFolderPath, newFile.path).toString())
             val parent = File(file.parent)
             val codeSnippet = CodeSnippet(
                 file.name,
                 newFile.path,
                 newFile.content,
-                openAiService.generateEmbedding(file.name, newFile.content),
+                FloatArray(1536)//TODO openAiService.generateEmbedding(file.name, newFile.content),
             ).also {
                 it.project = project
             }
@@ -209,7 +223,8 @@ class CodeGenerationService(
             }
             file.createNewFile()
             writer = PrintWriter(file)
-            writer.println(newFile.content)
+            val escapedContent = StringEscapeUtils.unescapeJava(newFile.content)
+            writer.println(escapedContent)//TODO File writing
             writer.close()
         }
         return createdSnippets

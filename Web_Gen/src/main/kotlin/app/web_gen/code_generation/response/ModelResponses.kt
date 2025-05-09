@@ -144,7 +144,7 @@ data class FileConflictResolverResponse(
 }
 
 data class FileContent(
-    val path: String,
+    var path: String,
     val content: String,
 )
 

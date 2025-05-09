@@ -11,7 +11,12 @@ data class FileConflictResolverRequest(
 
 data class ProjectGenerationRequest(
     var projectName: String,
+    var threadId: String,
+    var prompt: String
 )
+{
+    fun toMap():Map<String,String> = mapOf("project_name" to projectName, "thread_id" to threadId, "prompt" to prompt )
+}
 
 //Command error resolver
 //Given command

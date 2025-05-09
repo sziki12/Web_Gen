@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-generation_request_schema = {
+layout_generation_request_schema = {
   "title": "project_generation_template",
   "description": "The template for the user how to generate the project, install it's dependencies and run it.",
   "type": "object",
@@ -13,15 +13,50 @@ generation_request_schema = {
     },
     "codeToGenerateFiles": {
       "type": "string",
-      "description":"Runnable terminal code to generate required project files. Prefer using scaffolding tools (e.g., npx). Assumes the current directory is the root project folder."
+      "description":"Runnable terminal code to generate required project files. Prefer using scaffolding tools (e.g., npx). Assumes the current directory is the user folder. Don't change the working directory."
     },
     "codeToInstallPackages": {
       "type": "string",
-      "description":"Runnable terminal code to install required dependencies (e.g., npm/yarn/pnpm). Assumes execution from the project root."
+      "description":"Runnable terminal code to install required dependencies (e.g., npm/yarn/pnpm). Assumes execution from the project root. Don't change the working directory."
     },
     "codeToRun": {
       "type": "string",
-      "description":"Runnable terminal code to start the application (e.g., dev server, build step). Executed from the project root."
+      "description":"Runnable terminal code to start the application (e.g., dev server, build step). Executed from the project root. Don't change the working directory."
+    },
+    "newFiles": {
+      "type": "array",
+      "description":"List of new files to create in the project for it to be functional.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": { 
+              "type": "string",
+              "description": "Relative path to the new file from the root directory." },
+          "description": { 
+              "type": "string",
+              "description": "Detailed description of the file containing it's purpose."  }
+        },
+        "required": ["path", "content"],
+        "additionalProperties": False
+      }
+    }
+  },
+  "required": ["textResponse", "codeToRun", "codeToGenerateFiles","codeToInstallPackages", "newFiles"],
+  "additionalProperties": False
+}
+
+file_generation_request_schema = {
+  "title": "file_generation_schema",
+  "description": "The template for the content of the generated files.",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "description":"Should be developer."
+    },
+    "content": {
+      "type": "string",
+       "description":"Brief response to the users request"
     },
     "newFiles": {
       "type": "array",
@@ -34,7 +69,7 @@ generation_request_schema = {
               "description": "Relative path to the new file from the root directory." },
           "content": { 
               "type": "string",
-              "description": "Full content of the file to be created."  }
+              "description": "Full content of the file."  }
         },
         "required": ["path", "content"],
         "additionalProperties": False

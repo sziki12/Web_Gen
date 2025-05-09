@@ -29,6 +29,7 @@ class CodeGenerationController(
     private val projectRepository: GeneratedProjectRepository,
     private val codeGenerationService: CodeGenerationService,
     private val codeRunnerService: CodeRunnerService,
+    private val langchainService: LangchainService,
     private val openAiService: OpenAiService,
     private val projectPathResolver: ProjectPathResolver,
     private val zipDirectory: ZipDirectory,
@@ -73,7 +74,7 @@ class CodeGenerationController(
         val generatedCode = if (useTestResponses) {
             gson.fromJson(testGenerateResponse, ProjectCreationResponse::class.java)
         } else {
-            openAiService.generateProject(projectName, prompt)
+            langchainService.generateProject(projectName, prompt)
         }
         codeGenerationService.generateProjectFiles(projectName, generatedCode)
         return ResponseEntity.ok(generatedCode)

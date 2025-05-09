@@ -1,6 +1,7 @@
 package app.web_gen.code_generation
 
 import app.web_gen.code_generation.request.FileConflictResolverRequest
+import app.web_gen.code_generation.request.ProjectGenerationRequest
 import app.web_gen.code_generation.response.FileConflictResolverResponse
 import app.web_gen.code_generation.response.ProjectCreationResponse
 import app.web_gen.code_generation.response.ProjectModificationResponse
@@ -20,6 +21,7 @@ import org.springframework.ai.openai.api.OpenAiApi
 import org.springframework.ai.openai.api.ResponseFormat
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
+import org.springframework.web.client.RestTemplate
 
 
 @Service
@@ -29,6 +31,7 @@ class OpenAiService(
         @Value("\${spring.ai.openai.model}")
         val model: String
 ) {
+    private val restTemplate = RestTemplate()
     val embeddingModel = OpenAiEmbeddingModel(OpenAiApi(apiKey))
     val gson = Gson()
     fun modifyCode(query: String, relevantCode: List<CodeSnippet>): ProjectModificationResponse {
@@ -46,7 +49,7 @@ class OpenAiService(
     }
 
     fun generateProject(projectName: String, query: String): ProjectCreationResponse {//TODO Replace if Users added
-        val prompt = """
+        /*val prompt = """
             Root folder: USER_ACCOUNT 
             Project Name: $projectName
             The folder structure should be Root folder\\Project Name\\rest of the path.
@@ -57,8 +60,18 @@ class OpenAiService(
             "Request: $query"
         """.trimIndent()
         //TODO modify path if it doesn't contains the USER_ACCOUNT name find the package.json to start the project.
-        val response = this.structuredResponse(prompt, ProjectCreationResponse.responseFormat)
-        return gson.fromJson(response, ProjectCreationResponse::class.java)
+        val response = this.structuredResponse(prompt, ProjectCreationResponse.responseFormat)*/
+
+        val request = ProjectGenerationRequest(
+            projectName=projectName,
+            threadId = projectName,
+            prompt = query)
+        val response = khttp.post(
+            url = "http://localhost:9000",
+            json = request.toMap(),
+            timeout = 60.0)
+            //restTemplate.postForEntity("http://localhost:9000", request, ProjectCreationResponse::class.java)
+        return gson.fromJson(response.text, ProjectCreationResponse::class.java)
     }
 
     fun resolveFileConflict(task: String, request: FileConflictResolverRequest): FileConflictResolverResponse {

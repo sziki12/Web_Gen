@@ -44,4 +44,6 @@ class GeneratedProject(
 
     @Enumerated(EnumType.STRING)
     var status: ProjectStatus = ProjectStatus.Generating
+
+    fun rootFolderName(): String = name.lowercase()
 }

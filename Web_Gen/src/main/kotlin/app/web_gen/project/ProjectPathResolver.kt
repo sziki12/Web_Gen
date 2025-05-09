@@ -11,7 +11,7 @@ class ProjectPathResolver {
     @Value(value = "\${generated.project.path}")
     private lateinit var baseFilePath: String
 
-    fun getProjectPath(projectName:String): String = Path(getUserFolderPath(),projectName).pathString
+    fun getProjectPath(rootFolderName:String): String = Path(getUserFolderPath(),rootFolderName).pathString
     fun getUserFolderPath(): String {
         //TODO Get current User
         val tempUser = "USER_ACCOUNT"
