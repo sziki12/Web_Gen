@@ -2,7 +2,7 @@
 
 Web_Gen generates complete web applications from a natural-language prompt. Describe the app you want, and it plans the project, scaffolds it, installs the dependencies, writes the files to disk, and lets you start, stop, modify and download the result from a web UI.
 
-> **Status:** work in progress / portfolio project. See [Current limitations](#current-limitations).
+> **Status:** university research project. See [Current limitations](#current-limitations).
 
 ## Features
 
